@@ -18,10 +18,14 @@ import { Leaf } from "lucide-react"
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [error, setError] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError("")
+    setIsLoading(true)
     
     try {
       const res = await fetch('http://localhost:5000/api/v1/auth/login', {
@@ -29,15 +33,23 @@ export default function LoginPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
+      
       const data = await res.json();
+      
       if (data.success) {
         router.push('/')
       } else {
-        // Handle error
-        console.error('Login failed:', data.msg);
+        // Handle error - use the message from backend or a default message
+        const errorMessage = data.msg || 'Login failed. Please try again.';
+        setError(errorMessage);
+        console.error('Login failed:', errorMessage);
       }
     } catch (error) {
+      const errorMessage = 'Network error. Please check your connection and try again.';
+      setError(errorMessage);
       console.error('Login failed:', error);
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -56,6 +68,11 @@ export default function LoginPage() {
         <CardContent>
           <form onSubmit={handleSubmit}>
             <div className="grid gap-4">
+              {error && (
+                <div className="p-3 text-sm text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-md">
+                  {error}
+                </div>
+              )}
               <div className="grid gap-2">
                 <Label htmlFor="email">Email</Label>
                 <Input
@@ -66,6 +83,7 @@ export default function LoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+                  disabled={isLoading}
                 />
               </div>
               <div className="grid gap-2">
@@ -82,10 +100,15 @@ export default function LoginPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+                  disabled={isLoading}
                 />
               </div>
-              <Button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white">
-                Login
+              <Button 
+                type="submit" 
+                className="w-full bg-green-600 hover:bg-green-700 text-white"
+                disabled={isLoading}
+              >
+                {isLoading ? "Logging in..." : "Login"}
               </Button>
             </div>
           </form>

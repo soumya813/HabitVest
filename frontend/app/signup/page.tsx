@@ -19,10 +19,14 @@ export default function SignupPage() {
   const [username, setUsername] = useState("")
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
+  const [error, setError] = useState("")
+  const [isLoading, setIsLoading] = useState(false)
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
+    setError("")
+    setIsLoading(true)
     
     try {
       const res = await fetch('http://localhost:5000/api/v1/auth/register', {
@@ -30,15 +34,23 @@ export default function SignupPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, email, password }),
       });
+      
       const data = await res.json();
+      
       if (data.success) {
         router.push('/')
       } else {
-        // Handle error
-        console.error('Signup failed:', data.msg);
+        // Handle error - use the message from backend or a default message
+        const errorMessage = data.msg || 'Registration failed. Please try again.';
+        setError(errorMessage);
+        console.error('Signup failed:', errorMessage);
       }
     } catch (error) {
+      const errorMessage = 'Network error. Please check your connection and try again.';
+      setError(errorMessage);
       console.error('Signup failed:', error);
+    } finally {
+      setIsLoading(false)
     }
   }
 
@@ -57,6 +69,11 @@ export default function SignupPage() {
         <CardContent>
           <form onSubmit={handleSubmit}>
             <div className="grid gap-4">
+              {error && (
+                <div className="p-3 text-sm text-red-600 bg-red-50 dark:bg-red-900/20 dark:text-red-400 border border-red-200 dark:border-red-800 rounded-md">
+                  {error}
+                </div>
+              )}
               <div className="grid gap-2">
                 <Label htmlFor="username">Username</Label>
                 <Input
@@ -67,6 +84,7 @@ export default function SignupPage() {
                   value={username}
                   onChange={(e) => setUsername(e.target.value)}
                   className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+                  disabled={isLoading}
                 />
               </div>
               <div className="grid gap-2">
@@ -79,6 +97,7 @@ export default function SignupPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+                  disabled={isLoading}
                 />
               </div>
               <div className="grid gap-2">
@@ -90,10 +109,15 @@ export default function SignupPage() {
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
                   className="bg-gray-50 dark:bg-gray-700 border-gray-300 dark:border-gray-600"
+                  disabled={isLoading}
                 />
               </div>
-              <Button type="submit" className="w-full bg-green-600 hover:bg-green-700 text-white">
-                Create an account
+              <Button 
+                type="submit" 
+                className="w-full bg-green-600 hover:bg-green-700 text-white"
+                disabled={isLoading}
+              >
+                {isLoading ? "Creating account..." : "Create an account"}
               </Button>
             </div>
           </form>

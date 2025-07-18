@@ -9,6 +9,17 @@ exports.register = async (req, res, next) => {
     try {
         const { username, email, password } = req.body;
 
+        // Validate required fields
+        if (!username || !email || !password) {
+            return res.status(400).json({ success: false, msg: 'Please provide username, email and password' });
+        }
+
+        // Check if user already exists
+        const existingUser = await User.findOne({ email });
+        if (existingUser) {
+            return res.status(400).json({ success: false, msg: 'User already exists with this email' });
+        }
+
         // Create user
         const user = await User.create({
             username,
@@ -18,7 +29,8 @@ exports.register = async (req, res, next) => {
 
         sendTokenResponse(user, 200, res);
     } catch (err) {
-        res.status(400).json({ success: false });
+        console.error('Registration error:', err);
+        res.status(400).json({ success: false, msg: 'Registration failed. Please try again.' });
     }
 };
 
@@ -50,7 +62,40 @@ exports.login = async (req, res, next) => {
 
         sendTokenResponse(user, 200, res);
     } catch (err) {
-        res.status(400).json({ success: false });
+        console.error('Login error:', err);
+        res.status(400).json({ success: false, msg: 'Login failed. Please try again.' });
+    }
+};
+
+// @desc    Log user out / clear cookie
+// @route   GET /api/v1/auth/logout
+// @access  Private
+exports.logout = async (req, res, next) => {
+    res.cookie('token', 'none', {
+        expires: new Date(Date.now() + 10 * 1000),
+        httpOnly: true
+    });
+
+    res.status(200).json({
+        success: true,
+        data: 'User logged out'
+    });
+};
+
+// @desc    Get current logged in user
+// @route   GET /api/v1/auth/me
+// @access  Private
+exports.getMe = async (req, res, next) => {
+    try {
+        const user = await User.findById(req.user.id);
+
+        res.status(200).json({
+            success: true,
+            data: user
+        });
+    } catch (err) {
+        console.error('Get user error:', err);
+        res.status(400).json({ success: false, msg: 'Could not get user information' });
     }
 };
 
