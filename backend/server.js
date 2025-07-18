@@ -1,6 +1,7 @@
 const express = require('express');
 const dotenv = require('dotenv');
 const cors = require('cors');
+const cookieParser = require('cookie-parser');
 const connectDB = require('./config/db');
 
 // Load env vars
@@ -14,6 +15,9 @@ const app = express();
 // Body parser
 app.use(express.json());
 
+// Cookie parser
+app.use(cookieParser());
+
 // Enable CORS
 app.use(cors());
 
@@ -23,6 +27,7 @@ app.use('/api/v1/users', require('./routes/users'));
 app.use('/api/v1/tasks', require('./routes/tasks'));
 app.use('/api/v1/stocks', require('./routes/stocks'));
 app.use('/api/v1/rewards', require('./routes/rewards'));
+app.use('/api/v1/auth', require('./routes/auth'));
 
 const PORT = process.env.PORT || 5000;
 
