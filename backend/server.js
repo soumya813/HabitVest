@@ -21,6 +21,8 @@ app.use(cors());
 app.use('/api/v1/habits', require('./routes/habits'));
 app.use('/api/v1/users', require('./routes/users'));
 app.use('/api/v1/tasks', require('./routes/tasks'));
+app.use('/api/v1/stocks', require('./routes/stocks'));
+app.use('/api/v1/rewards', require('./routes/rewards'));
 
 const PORT = process.env.PORT || 5000;
 
