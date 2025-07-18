@@ -7,6 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { ThemeToggle } from "@/components/theme-toggle"
+import { UserProfile } from "@/components/user-profile"
 import {
   TrendingUp,
   TrendingDown,
@@ -95,12 +96,7 @@ export default function Dashboard() {
           </div>
           <div className="flex items-center space-x-3">
             <ThemeToggle />
-            <Avatar className="h-10 w-10">
-              <AvatarImage src="/placeholder.svg?height=40&width=40" />
-              <AvatarFallback className="bg-green-600 dark:bg-green-700">
-                <User className="h-5 w-5" />
-              </AvatarFallback>
-            </Avatar>
+            <UserProfile />
           </div>
         </div>
       </nav>

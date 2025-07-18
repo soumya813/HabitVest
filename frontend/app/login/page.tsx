@@ -30,6 +30,7 @@ export default function LoginPage() {
     try {
       const res = await fetch('http://localhost:5000/api/v1/auth/login', {
         method: 'POST',
+        credentials: 'include', // Include cookies
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
@@ -37,6 +38,10 @@ export default function LoginPage() {
       const data = await res.json();
       
       if (data.success) {
+        // Store token if provided (optional, since we're using cookies)
+        if (data.token) {
+          localStorage.setItem('token', data.token);
+        }
         router.push('/')
       } else {
         // Handle error - use the message from backend or a default message

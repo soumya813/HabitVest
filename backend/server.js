@@ -18,8 +18,13 @@ app.use(express.json());
 // Cookie parser
 app.use(cookieParser());
 
-// Enable CORS
-app.use(cors());
+// Enable CORS with credentials
+app.use(cors({
+    origin: 'http://localhost:3000', // Frontend URL
+    credentials: true, // Allow cookies to be sent
+    methods: ['GET', 'POST', 'PUT', 'DELETE'],
+    allowedHeaders: ['Content-Type', 'Authorization']
+}));
 
 // Mount routers
 app.use('/api/v1/habits', require('./routes/habits'));
