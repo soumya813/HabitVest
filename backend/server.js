@@ -20,6 +20,7 @@ app.use(cors());
 // Mount routers
 app.use('/api/v1/habits', require('./routes/habits'));
 app.use('/api/v1/users', require('./routes/users'));
+app.use('/api/v1/tasks', require('./routes/tasks'));
 
 const PORT = process.env.PORT || 5000;
 
