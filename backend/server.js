@@ -34,6 +34,10 @@ app.use('/api/v1/stocks', require('./routes/stocks'));
 app.use('/api/v1/rewards', require('./routes/rewards'));
 app.use('/api/v1/auth', require('./routes/auth'));
 
+// Mount nested routes
+app.use('/api/v1/users/:userId/tasks', require('./routes/tasks'));
+app.use('/api/v1/users/:userId/rewards', require('./routes/rewards'));
+
 const PORT = process.env.PORT || 5000;
 
 const server = app.listen(

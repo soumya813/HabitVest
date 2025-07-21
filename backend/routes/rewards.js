@@ -4,7 +4,10 @@ const {
     getReward,
     createReward,
     updateReward,
-    deleteReward
+    deleteReward,
+    redeemReward,
+    getAvailableRewards,
+    getRewardStats
 } = require('../controllers/rewards');
 
 const router = express.Router({ mergeParams: true });
@@ -15,9 +18,21 @@ router
     .post(createReward);
 
 router
+    .route('/available')
+    .get(getAvailableRewards);
+
+router
+    .route('/stats')
+    .get(getRewardStats);
+
+router
     .route('/:id')
     .get(getReward)
     .put(updateReward)
     .delete(deleteReward);
+
+router
+    .route('/:id/redeem')
+    .put(redeemReward);
 
 module.exports = router;

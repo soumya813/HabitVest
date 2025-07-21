@@ -1,5 +1,6 @@
 "use client"
 
+import Link from "next/link"
 import type { ElementType } from "react"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Button } from "@/components/ui/button"
@@ -20,6 +21,8 @@ import {
   Coffee,
   Gamepad2,
   ShoppingBag,
+  CheckSquare,
+  ArrowRight,
 } from "lucide-react"
 
 
@@ -103,6 +106,47 @@ export default function Dashboard() {
 
       {/* Main Content */}
       <div className="max-w-7xl mx-auto p-6">
+        {/* Quick Actions */}
+        <div className="grid grid-cols-1 md:grid-cols-2 gap-4 mb-6">
+          <Link href="/tasks">
+            <Card className="cursor-pointer hover:shadow-md transition-shadow dark:bg-gray-800 dark:border-gray-700 border-blue-200 hover:border-blue-300">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="p-3 rounded-full bg-blue-50 dark:bg-blue-900/20">
+                      <CheckSquare className="h-8 w-8 text-blue-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Manage Tasks</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Create and complete tasks to earn points</p>
+                    </div>
+                  </div>
+                  <ArrowRight className="h-5 w-5 text-gray-400" />
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+
+          <Link href="/rewards">
+            <Card className="cursor-pointer hover:shadow-md transition-shadow dark:bg-gray-800 dark:border-gray-700 border-purple-200 hover:border-purple-300">
+              <CardContent className="p-6">
+                <div className="flex items-center justify-between">
+                  <div className="flex items-center space-x-4">
+                    <div className="p-3 rounded-full bg-purple-50 dark:bg-purple-900/20">
+                      <Gift className="h-8 w-8 text-purple-600" />
+                    </div>
+                    <div>
+                      <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Browse Rewards</h3>
+                      <p className="text-sm text-gray-600 dark:text-gray-400">Redeem your points for amazing rewards</p>
+                    </div>
+                  </div>
+                  <ArrowRight className="h-5 w-5 text-gray-400" />
+                </div>
+              </CardContent>
+            </Card>
+          </Link>
+        </div>
+
         <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
           {/* Left Column - Habits */}
           <div className="lg:col-span-3">

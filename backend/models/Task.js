@@ -16,6 +16,27 @@ const TaskSchema = new mongoose.Schema({
         type: Boolean,
         default: false
     },
+    priority: {
+        type: String,
+        enum: ['low', 'medium', 'high'],
+        default: 'medium'
+    },
+    dueDate: {
+        type: Date
+    },
+    category: {
+        type: String,
+        trim: true,
+        maxlength: [50, 'Category can not be more than 50 characters']
+    },
+    points: {
+        type: Number,
+        default: 10,
+        min: [1, 'Points must be at least 1']
+    },
+    completedAt: {
+        type: Date
+    },
     user: {
         type: mongoose.Schema.ObjectId,
         ref: 'User',

@@ -2,11 +2,12 @@ import type React from "react"
 import type { Metadata } from "next"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
+import { Navigation } from "@/components/navigation"
 
 export const metadata: Metadata = {
-  title: "v0 App",
-  description: "Created with v0",
-  generator: "v0.dev",
+  title: "HabitVest - Gamify Your Habits",
+  description: "Turn your tasks into rewards with HabitVest - the gamified habit tracking app",
+  generator: "Next.js",
 }
 
 export default function RootLayout({
@@ -18,7 +19,8 @@ export default function RootLayout({
     <html lang="en" suppressHydrationWarning>
       <body>
         <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          {children}
+          <Navigation />
+          <main>{children}</main>
         </ThemeProvider>
       </body>
     </html>
