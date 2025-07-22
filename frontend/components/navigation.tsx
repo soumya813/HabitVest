@@ -4,7 +4,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Home, CheckSquare, Gift, User, TrendingUp, Star } from 'lucide-react';
+import { Home, CheckSquare, Gift, User, Leaf, Star } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 
 export function Navigation() {
@@ -21,21 +21,25 @@ export function Navigation() {
   const userPoints = 150;
 
   return (
-    <nav className="border-b bg-background/95 backdrop-blur supports-[backdrop-filter]:bg-background/60">
+    <nav className="border-b bg-green-800 dark:bg-green-900 shadow-sm">
       <div className="container flex h-16 items-center justify-between">
         <div className="flex items-center space-x-6">
           <Link href="/" className="flex items-center space-x-2">
-            <TrendingUp className="h-6 w-6 text-primary" />
-            <span className="font-bold text-xl">HabitVest</span>
+            <Leaf className="h-6 w-6 text-white" />
+            <span className="font-bold text-xl text-white">HabitVest</span>
           </Link>
           
           <div className="hidden md:flex items-center space-x-4">
             {navItems.map((item) => (
               <Link key={item.href} href={item.href}>
                 <Button
-                  variant={pathname === item.href ? 'default' : 'ghost'}
+                  variant={pathname === item.href ? 'secondary' : 'ghost'}
                   size="sm"
-                  className="flex items-center space-x-2"
+                  className={`flex items-center space-x-2 ${
+                    pathname === item.href 
+                      ? 'bg-white/20 text-white hover:bg-white/30' 
+                      : 'text-white/90 hover:text-white hover:bg-white/10'
+                  }`}
                 >
                   <item.icon className="h-4 w-4" />
                   <span>{item.label}</span>
@@ -46,8 +50,8 @@ export function Navigation() {
         </div>
 
         <div className="flex items-center space-x-4">
-          <Badge variant="secondary" className="hidden sm:flex items-center space-x-1">
-            <Star className="h-3 w-3 text-yellow-500" />
+          <Badge variant="secondary" className="hidden sm:flex items-center space-x-1 bg-white/20 text-white border-white/20">
+            <Star className="h-3 w-3 text-yellow-400" />
             <span className="font-medium">{userPoints} points</span>
           </Badge>
           <ThemeToggle />

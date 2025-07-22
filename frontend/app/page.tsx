@@ -90,20 +90,6 @@ export default function Dashboard() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
-      {/* Top Navbar */}
-      <nav className="bg-green-800 dark:bg-green-900 text-white px-6 py-4 shadow-sm">
-        <div className="flex items-center justify-between max-w-7xl mx-auto">
-          <div className="flex items-center space-x-2">
-            <Leaf className="h-8 w-8" />
-            <span className="text-xl font-bold">HabitVest</span>
-          </div>
-          <div className="flex items-center space-x-3">
-            <ThemeToggle />
-            <UserProfile />
-          </div>
-        </div>
-      </nav>
-
       {/* Main Content */}
       <div className="max-w-7xl mx-auto p-6">
         {/* Quick Actions */}
