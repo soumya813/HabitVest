@@ -14,12 +14,14 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { Leaf } from "lucide-react"
+import { useAuth } from "@/lib/auth-context"
 
 export default function LoginPage() {
   const [email, setEmail] = useState("")
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const { login } = useAuth();
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -28,24 +30,30 @@ export default function LoginPage() {
     setIsLoading(true)
     
     try {
-      const res = await fetch('http://localhost:5000/api/v1/auth/login', {
+      const res = await fetch('http://localhost:5001/api/v1/auth/login', {
         method: 'POST',
         credentials: 'include', // Include cookies
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
       });
       
-      const data = await res.json();
+      if (!res.ok) {
+        const errorData = await res.json();
+        const errorMessage = errorData.msg || errorData.message || `Server error: ${res.status}`;
+        setError(errorMessage);
+        console.error('Login failed with status:', res.status, errorData);
+        return;
+      }
       
-      if (data.success) {
-        // Store token if provided (optional, since we're using cookies)
-        if (data.token) {
-          localStorage.setItem('token', data.token);
-        }
-        router.push('/')
+      const data = await res.json();
+      console.log('Login response:', data); // Debug log
+      
+      if (data.success && data.token && data.data) {
+        // Use the login function from AuthContext
+        login(data.token, data.data);
       } else {
         // Handle error - use the message from backend or a default message
-        const errorMessage = data.msg || 'Login failed. Please try again.';
+        const errorMessage = data.msg || data.message || 'Login failed. Please try again.';
         setError(errorMessage);
         console.error('Login failed:', errorMessage);
       }

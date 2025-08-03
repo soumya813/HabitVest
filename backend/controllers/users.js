@@ -58,21 +58,54 @@ exports.createUser = async (req, res, next) => {
 // @access  Private
 exports.updateUser = async (req, res, next) => {
     try {
-        const user = await User.findByIdAndUpdate(req.params.id, req.body, {
+        // Check if user is trying to update their own profile
+        if (req.user.id !== req.params.id) {
+            return res.status(403).json({ 
+                success: false, 
+                msg: 'Not authorized to update this profile' 
+            });
+        }
+
+        // Only allow updating certain fields
+        const allowedFields = ['username', 'email'];
+        const updateData = {};
+        
+        allowedFields.forEach(field => {
+            if (req.body[field] !== undefined) {
+                updateData[field] = req.body[field];
+            }
+        });
+
+        const user = await User.findByIdAndUpdate(req.params.id, updateData, {
             new: true,
             runValidators: true
         });
 
         if (!user) {
-            return res.status(404).json({ success: false });
+            return res.status(404).json({ 
+                success: false, 
+                msg: 'User not found' 
+            });
         }
 
         res.status(200).json({
             success: true,
-            data: user
+            data: {
+                _id: user._id,
+                username: user.username,
+                email: user.email,
+                points: user.points || 0,
+                totalTasksCompleted: user.totalTasksCompleted || 0,
+                totalRewardsRedeemed: user.totalRewardsRedeemed || 0,
+                createdAt: user.createdAt
+            }
         });
     } catch (err) {
-        res.status(400).json({ success: false });
+        console.error('Update user error:', err);
+        res.status(400).json({ 
+            success: false, 
+            msg: 'Failed to update user profile' 
+        });
     }
 };
 

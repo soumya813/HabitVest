@@ -14,6 +14,7 @@ import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import Link from "next/link"
 import { Leaf } from "lucide-react"
+import { useAuth } from "@/lib/auth-context"
 
 export default function SignupPage() {
   const [username, setUsername] = useState("")
@@ -21,6 +22,7 @@ export default function SignupPage() {
   const [password, setPassword] = useState("")
   const [error, setError] = useState("")
   const [isLoading, setIsLoading] = useState(false)
+  const { login } = useAuth();
   const router = useRouter()
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -28,25 +30,44 @@ export default function SignupPage() {
     setError("")
     setIsLoading(true)
     
+    // Client-side validation
+    if (!username.trim() || !email.trim() || !password.trim()) {
+      setError('All fields are required');
+      setIsLoading(false);
+      return;
+    }
+    
+    if (password.length < 6) {
+      setError('Password must be at least 6 characters long');
+      setIsLoading(false);
+      return;
+    }
+    
     try {
-      const res = await fetch('http://localhost:5000/api/v1/auth/register', {
+      const res = await fetch('http://localhost:5001/api/v1/auth/register', {
         method: 'POST',
         credentials: 'include', // Include cookies
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ username, email, password }),
       });
       
-      const data = await res.json();
+      if (!res.ok) {
+        const errorData = await res.json();
+        const errorMessage = errorData.msg || errorData.message || `Server error: ${res.status}`;
+        setError(errorMessage);
+        console.error('Signup failed with status:', res.status, errorData);
+        return;
+      }
       
-      if (data.success) {
-        // Store token if provided (optional, since we're using cookies)
-        if (data.token) {
-          localStorage.setItem('token', data.token);
-        }
-        router.push('/')
+      const data = await res.json();
+      console.log('Signup response:', data); // Debug log
+      
+      if (data.success && data.token && data.data) {
+        // Use the login function from AuthContext to automatically log in after signup
+        login(data.token, data.data);
       } else {
         // Handle error - use the message from backend or a default message
-        const errorMessage = data.msg || 'Registration failed. Please try again.';
+        const errorMessage = data.msg || data.message || 'Registration failed. Please try again.';
         setError(errorMessage);
         console.error('Signup failed:', errorMessage);
       }

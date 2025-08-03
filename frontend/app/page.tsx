@@ -10,7 +10,10 @@ import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
 import { ThemeToggle } from "@/components/theme-toggle"
 import { UserProfile } from "@/components/user-profile"
+import { HabitForm } from "@/components/habit-form"
+import { HabitList } from "@/components/habit-list"
 import { mockAPI } from "@/lib/mock-api"
+import { useAuth } from "@/lib/auth-context"
 import {
   TrendingUp,
   TrendingDown,
@@ -35,107 +38,181 @@ interface UserData {
   totalRewardsRedeemed: number;
 }
 
-interface HabitData {
-  id: number;
+interface Category {
+  _id: string;
   name: string;
-  completed: boolean;
+  color: string;
+  icon: string;
+}
+
+interface HabitData {
+  _id: string;
+  name: string;
+  description?: string;
+  category: Category | string;
   points: number;
-  category: 'Health' | 'Learning' | 'Finance';
+  frequency: {
+    type: 'daily' | 'weekly' | 'specific_days' | 'x_times_per_week';
+    days?: number[];
+    count?: number;
+  };
+  completedToday?: boolean;
+  streak: number;
+  isActive: boolean;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export default function Dashboard() {
-  // State for user data and functionality
+  // Get authenticated user from context
+  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  
+  // State management
   const [userData, setUserData] = useState<UserData | null>(null);
+  const [habits, setHabits] = useState<HabitData[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [progressPercentage, setProgressPercentage] = useState(75);
-
-  // Fetch user data on component mount
+  
+  // Debug logging
   useEffect(() => {
-    fetchUserData();
-  }, []);
+    console.log('Dashboard - Auth state:', { user, isAuthenticated, authLoading });
+    console.log('Categories state:', categories);
+    console.log('Habits state:', habits);
+  }, [user, isAuthenticated, authLoading, categories, habits]);
 
+  // Fetch data from backend
   const fetchUserData = async () => {
+    if (!isAuthenticated) return;
+    
     try {
-      // Try to fetch real user data first, fallback to mock API
-      let response;
-      try {
-        response = await fetch('http://localhost:5001/api/v1/auth/me', {
-          method: 'GET',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
+      console.log('Fetching user data...');
+      const response = await fetch('http://localhost:5001/api/v1/auth/me', {
+        credentials: 'include',
+      });
+      
+      console.log('User data response:', response.status, response.ok);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('User data received:', data);
+        setUserData(data.data);
         
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success) {
-            setUserData(data.data);
-            // Calculate progress based on points (example: every 100 points = 1 level)
-            const currentLevel = Math.floor(data.data.points / 100);
-            const pointsInCurrentLevel = data.data.points % 100;
-            setProgressPercentage(pointsInCurrentLevel);
-            setIsLoading(false);
-            return;
-          }
-        }
-      } catch (error) {
-        console.log('Backend not available, using mock data');
-      }
-
-      // Fallback to mock API
-      const mockData = await mockAPI.getUser();
-      if (mockData.success) {
-        setUserData(mockData.data);
         // Calculate progress based on points
-        const currentLevel = Math.floor(mockData.data.points / 100);
-        const pointsInCurrentLevel = mockData.data.points % 100;
+        const pointsInCurrentLevel = (data.data.points || 0) % 100;
         setProgressPercentage(pointsInCurrentLevel);
+      } else {
+        const text = await response.text();
+        console.error('Error fetching user data:', response.status, text);
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
-    } finally {
-      setIsLoading(false);
     }
   };
 
-  // Handle habit completion
-  const handleHabitComplete = async (habitId: number) => {
-    if (!userData) return;
-
+  const fetchHabits = async () => {
+    if (!isAuthenticated) return;
     try {
-      // Simulate habit completion by awarding points
-      const habit = habits.find(h => h.id === habitId);
-      if (!habit || habit.completed) return;
-
-      // Update local state immediately for better UX
-      setHabits(prev => prev.map(h => 
-        h.id === habitId ? { ...h, completed: true } : h
-      ));
-
-      // Update user points
-      const newPoints = userData.points + habit.points;
-      setUserData(prev => prev ? {
-        ...prev,
-        points: newPoints,
-        totalTasksCompleted: prev.totalTasksCompleted + 1
-      } : null);
-
-      // Update progress
-      const currentLevel = Math.floor(newPoints / 100);
-      const pointsInCurrentLevel = newPoints % 100;
-      setProgressPercentage(pointsInCurrentLevel);
-
-      // In a real app, you would make an API call here to update the backend
-      console.log(`Habit completed! Earned ${habit.points} points`);
+      console.log('Fetching habits...');
+      const response = await fetch('http://localhost:5001/api/v1/habits', {
+        credentials: 'include',
+      });
       
+      console.log('Habits response:', response.status, response.ok);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Habits data received:', data);
+        setHabits(data.data || []);
+      } else {
+        const text = await response.text();
+        console.error('Error fetching habits: ', response.status, text);
+      }
+    } catch (error) {
+      console.error('Error fetching habits:', error);
+    }
+  };
+
+  const fetchCategories = async () => {
+    if (!isAuthenticated) return;
+    try {
+      console.log('Fetching categories...');
+      const response = await fetch('http://localhost:5001/api/v1/categories', {
+        credentials: 'include',
+      });
+      
+      console.log('Categories response:', response.status, response.ok);
+      
+      if (response.ok) {
+        const data = await response.json();
+        console.log('Categories data received:', data);
+        setCategories(data.data || []);
+      } else {
+        const text = await response.text();
+        console.error('Error fetching categories: ', response.status, text);
+        
+        // If we get HTML error, it's likely auth issue - try to provide fallback categories
+        if (text.includes('<!DOCTYPE')) {
+          console.log('Got HTML error page - likely auth issue. Setting fallback categories.');
+          setCategories([
+            { _id: 'fallback-1', name: 'Health', color: '#EF4444', icon: 'heart' },
+            { _id: 'fallback-2', name: 'Work', color: '#3B82F6', icon: 'briefcase' },
+            { _id: 'fallback-3', name: 'Finance', color: '#10B981', icon: 'dollar-sign' },
+            { _id: 'fallback-4', name: 'Education', color: '#8B5CF6', icon: 'book' },
+            { _id: 'fallback-5', name: 'Personal', color: '#F59E0B', icon: 'user' },
+          ]);
+        }
+      }
+    } catch (error) {
+      console.error('Error fetching categories:', error);
+      // Provide fallback categories on network error
+      setCategories([
+        { _id: 'fallback-1', name: 'Health', color: '#EF4444', icon: 'heart' },
+        { _id: 'fallback-2', name: 'Work', color: '#3B82F6', icon: 'briefcase' },
+        { _id: 'fallback-3', name: 'Finance', color: '#10B981', icon: 'dollar-sign' },
+        { _id: 'fallback-4', name: 'Education', color: '#8B5CF6', icon: 'book' },
+        { _id: 'fallback-5', name: 'Personal', color: '#F59E0B', icon: 'user' },
+      ]);
+    }
+  };
+
+  // Load data when authenticated
+  useEffect(() => {
+    if (!authLoading && isAuthenticated) {
+      Promise.all([
+        fetchUserData(),
+        fetchHabits(),
+        fetchCategories()
+      ]).finally(() => {
+        setIsLoading(false);
+      });
+    } else if (!authLoading && !isAuthenticated) {
+      setIsLoading(false);
+    }
+  }, [authLoading, isAuthenticated]);
+
+  // Handle habit completion
+  const handleHabitComplete = async (habitId: string) => {
+    try {
+      const response = await fetch(`http://localhost:5001/api/v1/habits/${habitId}/complete`, {
+        method: 'POST',
+        credentials: 'include',
+      });
+
+      if (response.ok) {
+        const data = await response.json();
+        // Refresh habits and user data
+        await Promise.all([fetchHabits(), fetchUserData()]);
+        console.log('Habit completed successfully:', data);
+      }
     } catch (error) {
       console.error('Error completing habit:', error);
-      // Revert the optimistic update on error
-      setHabits(prev => prev.map(h => 
-        h.id === habitId ? { ...h, completed: false } : h
-      ));
     }
+  };
+
+  const handleHabitCreated = () => {
+    // Refresh habits when a new one is created
+    fetchHabits();
   };
 
   // Handle reward redemption
@@ -181,9 +258,42 @@ export default function Dashboard() {
     }
   };
 
-  // Calculate dynamic portfolio values based on user data
+  // Calculate dynamic portfolio values based on habit data
   const calculatePortfolioValues = () => {
-    if (!userData) return investments;
+    const defaultInvestments = [
+      {
+        category: "Health",
+        icon: Heart,
+        value: "500 pts",
+        change: "+0.0%",
+        isPositive: true,
+        color: "bg-red-500",
+        lightColor: "bg-red-50",
+        textColor: "text-red-600",
+      },
+      {
+        category: "Learning",
+        icon: BookOpen,
+        value: "350 pts",
+        change: "+0.0%",
+        isPositive: true,
+        color: "bg-blue-500",
+        lightColor: "bg-blue-50",
+        textColor: "text-blue-600",
+      },
+      {
+        category: "Finance",
+        icon: DollarSign,
+        value: "800 pts",
+        change: "+0.0%",
+        isPositive: true,
+        color: "bg-green-500",
+        lightColor: "bg-green-50",
+        textColor: "text-green-600",
+      },
+    ];
+
+    if (!userData || habits.length === 0) return defaultInvestments;
 
     const baseValues = {
       Health: 500,
@@ -191,52 +301,30 @@ export default function Dashboard() {
       Finance: 800
     };
 
-    // Filter habits by category and calculate category-specific metrics
-    const getHabitsByCategory = (category: 'Health' | 'Learning' | 'Finance') => {
-      return habits.filter(h => h.category === category);
-    };
-
-    const getCompletedHabitsByCategory = (category: 'Health' | 'Learning' | 'Finance') => {
-      return habits.filter(h => h.category === category && h.completed);
-    };
-
-    const getCategoryPoints = (category: 'Health' | 'Learning' | 'Finance') => {
-      return getCompletedHabitsByCategory(category).reduce((sum, habit) => sum + habit.points, 0);
-    };
-
-    return investments.map(investment => {
-      const category = investment.category as 'Health' | 'Learning' | 'Finance';
-      const baseValue = baseValues[category];
+    return defaultInvestments.map(investment => {
+      const categoryName = investment.category;
+      const baseValue = baseValues[categoryName as keyof typeof baseValues] || 500;
       
-      // Calculate ONLY category-specific values (no cross-category influence)
-      const categoryHabits = getHabitsByCategory(category);
-      const completedCategoryHabits = getCompletedHabitsByCategory(category);
-      const categoryPoints = getCategoryPoints(category);
-      const completionRate = categoryHabits.length > 0 ? completedCategoryHabits.length / categoryHabits.length : 0;
+      // Find habits for this category
+      const categoryHabits = habits.filter(h => {
+        const habitCategory = typeof h.category === 'string' ? h.category : h.category?.name;
+        return habitCategory?.toLowerCase() === categoryName.toLowerCase();
+      });
+
+      const completedHabits = categoryHabits.filter(h => h.completedToday);
+      const categoryPoints = completedHabits.reduce((sum, habit) => sum + habit.points, 0);
+      const completionRate = categoryHabits.length > 0 ? completedHabits.length / categoryHabits.length : 0;
       
-      // Simplified dynamic value calculation - much smaller bonuses
-      const pointsBonus = categoryPoints * 0.5; // Each earned point in THIS category adds 0.5 to portfolio value
-      const completionBonus = completionRate * 50; // Completion rate bonus (0-50 points)
-      
+      // Calculate dynamic value
+      const pointsBonus = categoryPoints * 0.5;
+      const completionBonus = completionRate * 50;
       const dynamicValue = Math.round(baseValue + pointsBonus + completionBonus);
       
-      // Simplified growth percentage calculation
-      let growthPercentage = 0;
-      
-      if (category === 'Health') {
-        // Simple calculation: 1% per completed habit + 0.1% per 10 points earned
-        growthPercentage = (completedCategoryHabits.length * 1) + (categoryPoints * 0.01) - 2;
-      } else if (category === 'Learning') {
-        // Simple calculation: 0.8% per completed habit + 0.12% per 10 points earned  
-        growthPercentage = (completedCategoryHabits.length * 0.8) + (categoryPoints * 0.012) - 1.5;
-      } else if (category === 'Finance') {
-        // Simple calculation: 0.9% per completed habit + 0.08% per 10 points - spending penalty
-        const spendingPenalty = userData.totalRewardsRedeemed * 0.3;
-        growthPercentage = (completedCategoryHabits.length * 0.9) + (categoryPoints * 0.008) - spendingPenalty - 1;
-      }
-
-      // Cap the growth percentage between -10% and +15%
-      growthPercentage = Math.max(-10, Math.min(15, growthPercentage));
+      // Calculate growth percentage
+      const avgStreak = categoryHabits.reduce((sum, h) => sum + h.streak, 0) / Math.max(categoryHabits.length, 1);
+      const growthPercentage = Math.max(-10, Math.min(15, 
+        (completedHabits.length * 1) + (avgStreak * 0.1) + (completionRate * 5) - 2
+      ));
       
       return {
         ...investment,
@@ -249,12 +337,15 @@ export default function Dashboard() {
 
   // Calculate dynamic portfolio summary
   const calculatePortfolioSummary = () => {
-    if (!userData) return {
-      totalValue: '2,500 pts',
-      totalGrowth: '+5.0%',
-      streakDays: 15,
-      currentLevel: 'Level 3'
+    const defaultSummary = {
+      totalValue: '1,650 pts',
+      totalGrowth: '+0.0%',
+      streakDays: 0,
+      currentLevel: 'Level 1',
+      isGrowthPositive: true
     };
+
+    if (!userData) return defaultSummary;
 
     const dynamicPortfolio = calculatePortfolioValues();
     const totalValue = dynamicPortfolio.reduce((sum, item) => {
@@ -265,99 +356,24 @@ export default function Dashboard() {
       return sum + parseFloat(item.change.replace('%', ''));
     }, 0) / dynamicPortfolio.length;
 
-    // Simplified streak calculation
-    const completedHabits = habits.filter(h => h.completed).length;
-    const totalHabits = habits.length;
-    const completionRate = totalHabits > 0 ? completedHabits / totalHabits : 0;
-    
-    // Simple streak calculation: base + completed habits + consistency bonus
-    const baseStreak = 5; // Base streak
-    const streakHabitBonus = completedHabits * 3; // 3 days per completed habit
-    const consistencyBonus = Math.round(completionRate * 10); // Up to 10 days for 100% completion
-    const taskBonus = Math.min(userData.totalTasksCompleted, 15); // Max 15 days from tasks
-    
-    const streakDays = baseStreak + streakHabitBonus + consistencyBonus + taskBonus;
+    // Calculate streak from habits
+    const avgStreak = habits.length > 0 
+      ? Math.round(habits.reduce((sum, h) => sum + h.streak, 0) / habits.length)
+      : 0;
 
-    // Simplified level calculation
-    const totalHabitPoints = habits.filter(h => h.completed).reduce((sum, h) => sum + h.points, 0);
-    const baseLevel = Math.floor(userData.points / 150); // Level every 150 points
-    const levelHabitBonus = Math.floor(totalHabitPoints / 100); // Bonus level every 100 habit points
-    const currentLevel = Math.max(1, baseLevel + levelHabitBonus); // Minimum level 1
+    // Calculate level
+    const currentLevel = Math.max(1, Math.floor(userData.points / 150) + 1);
 
     return {
       totalValue: `${totalValue.toLocaleString()} pts`,
       totalGrowth: `${averageGrowth >= 0 ? '+' : ''}${averageGrowth.toFixed(1)}%`,
-      streakDays: streakDays,
+      streakDays: avgStreak,
       currentLevel: `Level ${currentLevel}`,
       isGrowthPositive: averageGrowth >= 0
     };
   };
 
-  // Static data (could be moved to state and made dynamic)
-  const [habits, setHabits] = useState<HabitData[]>([
-    // Health Category Habits
-    { id: 1, name: "Morning Exercise", completed: false, points: 100, category: 'Health' },
-    { id: 2, name: "Drink 8 Glasses Water", completed: true, points: 25, category: 'Health' },
-    { id: 3, name: "Take Vitamins", completed: false, points: 15, category: 'Health' },
-    { id: 4, name: "10k Steps Walk", completed: false, points: 50, category: 'Health' },
-    { id: 5, name: "Healthy Meal Prep", completed: true, points: 75, category: 'Health' },
-    
-    // Learning Category Habits
-    { id: 6, name: "Morning Meditation", completed: false, points: 50, category: 'Learning' },
-    { id: 7, name: "Read 30 Minutes", completed: true, points: 30, category: 'Learning' },
-    { id: 8, name: "Practice Skill", completed: false, points: 40, category: 'Learning' },
-    { id: 9, name: "Watch Educational Video", completed: false, points: 20, category: 'Learning' },
-    { id: 10, name: "Journal Writing", completed: true, points: 25, category: 'Learning' },
-    
-    // Finance Category Habits
-    { id: 11, name: "Budget Review", completed: false, points: 75, category: 'Finance' },
-    { id: 12, name: "Save Money", completed: true, points: 60, category: 'Finance' },
-    { id: 13, name: "Track Expenses", completed: false, points: 30, category: 'Finance' },
-    { id: 14, name: "Investment Research", completed: false, points: 50, category: 'Finance' },
-    { id: 15, name: "Pay Bills", completed: true, points: 40, category: 'Finance' },
-  ]);
-
-  const investments: {
-    category: string;
-    icon: ElementType;
-    value: string;
-    change: string;
-    isPositive: boolean;
-    color: string;
-    lightColor: string;
-    textColor: string;
-  }[] = [
-    {
-      category: "Health",
-      icon: Heart,
-      value: "650 pts",
-      change: "+12.5%",
-      isPositive: true,
-      color: "bg-red-500",
-      lightColor: "bg-red-50",
-      textColor: "text-red-600",
-    },
-    {
-      category: "Learning",
-      icon: BookOpen,
-      value: "420 pts",
-      change: "+8.3%",
-      isPositive: true,
-      color: "bg-blue-500",
-      lightColor: "bg-blue-50",
-      textColor: "text-blue-600",
-    },
-    {
-      category: "Finance",
-      icon: DollarSign,
-      value: "890 pts",
-      change: "-2.1%",
-      isPositive: false,
-      color: "bg-green-500",
-      lightColor: "bg-green-50",
-      textColor: "text-green-600",
-    },
-  ]
+  const investments = calculatePortfolioValues();
 
   const rewards: {
     id: number;
@@ -370,6 +386,49 @@ export default function Dashboard() {
     { id: 3, name: "Shopping Spree", points: 500, icon: ShoppingBag },
     { id: 4, name: "Cheat Meal", points: 300, icon: Gift },
   ]
+
+  // Show loading while auth is being checked
+  if (authLoading || isLoading) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-green-600 mx-auto mb-4"></div>
+          <p className="text-gray-600 dark:text-gray-400">Loading...</p>
+        </div>
+      </div>
+    );
+  }
+
+  // Show login prompt if not authenticated
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center">
+        <Card className="mx-auto max-w-md bg-white dark:bg-gray-800 shadow-lg rounded-lg">
+          <CardHeader className="text-center">
+            <Leaf className="h-12 w-12 text-green-600 mx-auto mb-4" />
+            <CardTitle className="text-2xl font-bold text-gray-900 dark:text-white">
+              Welcome to HabitVest
+            </CardTitle>
+            <p className="text-gray-600 dark:text-gray-400">
+              Please log in to access your dashboard
+            </p>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <Link href="/login">
+              <Button className="w-full bg-green-600 hover:bg-green-700 text-white">
+                Login
+              </Button>
+            </Link>
+            <Link href="/signup">
+              <Button variant="outline" className="w-full">
+                Sign Up
+              </Button>
+            </Link>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors">
@@ -453,45 +512,19 @@ export default function Dashboard() {
                   </p>
                 </div>
               </CardHeader>
-              <CardContent className="space-y-3">
-                <h3 className="font-medium text-gray-800 dark:text-gray-200 mb-3">Daily Habits</h3>
-                {isLoading ? (
-                  <div className="space-y-3">
-                    {[1, 2, 3, 4].map((i) => (
-                      <div key={i} className="animate-pulse">
-                        <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                          <div className="flex-1">
-                            <div className="h-4 bg-gray-200 dark:bg-gray-600 rounded w-3/4 mb-1"></div>
-                            <div className="h-3 bg-gray-200 dark:bg-gray-600 rounded w-1/4"></div>
-                          </div>
-                          <div className="h-8 w-16 bg-gray-200 dark:bg-gray-600 rounded"></div>
-                        </div>
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  habits.map((habit) => (
-                    <div
-                      key={habit.id}
-                      className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-700 rounded-lg"
-                    >
-                      <div className="flex-1">
-                        <p className="text-sm font-medium text-gray-800 dark:text-gray-200">{habit.name}</p>
-                        <p className="text-xs text-gray-500 dark:text-gray-500">{habit.points} pts</p>
-                      </div>
-                      <Button
-                        size="sm"
-                        className={`${
-                          habit.completed ? "bg-gray-400 hover:bg-gray-500" : "bg-green-600 hover:bg-green-700"
-                        } text-white`}
-                        disabled={habit.completed}
-                        onClick={() => handleHabitComplete(habit.id)}
-                      >
-                        {habit.completed ? "Done" : "Complete"}
-                      </Button>
-                    </div>
-                  ))
-                )}
+              <CardContent className="space-y-4">
+                <div className="flex items-center justify-between">
+                  <h3 className="font-medium text-gray-800 dark:text-gray-200">Your Habits</h3>
+                  <HabitForm 
+                    categories={categories}
+                    onHabitCreated={handleHabitCreated}
+                  />
+                </div>
+                <HabitList 
+                  habits={habits}
+                  isLoading={isLoading}
+                  onHabitComplete={handleHabitComplete}
+                />
               </CardContent>
             </Card>
           </div>

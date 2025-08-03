@@ -20,14 +20,16 @@ app.use(cookieParser());
 
 // Enable CORS with credentials
 app.use(cors({
-    origin: 'http://localhost:3000', // Frontend URL
+    origin: ['http://localhost:3000', 'http://127.0.0.1:3000'], // Frontend URL
     credentials: true, // Allow cookies to be sent
-    methods: ['GET', 'POST', 'PUT', 'DELETE'],
-    allowedHeaders: ['Content-Type', 'Authorization']
+    methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+    allowedHeaders: ['Content-Type', 'Authorization', 'Cookie'],
+    exposedHeaders: ['Set-Cookie']
 }));
 
 // Mount routers
 app.use('/api/v1/habits', require('./routes/habits'));
+app.use('/api/v1/categories', require('./routes/categories'));
 app.use('/api/v1/users', require('./routes/users'));
 app.use('/api/v1/tasks', require('./routes/tasks'));
 app.use('/api/v1/stocks', require('./routes/stocks'));

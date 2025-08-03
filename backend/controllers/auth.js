@@ -27,6 +27,15 @@ exports.register = async (req, res, next) => {
             password
         });
 
+        // Create default categories for the new user
+        try {
+            const Category = require('../models/Category');
+            await Category.createDefaultCategories(user._id);
+            console.log('Default categories created for user:', user._id);
+        } catch (categoryError) {
+            console.error('Error creating default categories:', categoryError);
+        }
+
         sendTokenResponse(user, 200, res);
     } catch (err) {
         console.error('Registration error:', err);
@@ -104,22 +113,33 @@ const sendTokenResponse = (user, statusCode, res) => {
     // Create token
     const token = user.getSignedJwtToken();
 
+
     const options = {
         expires: new Date(
             Date.now() + process.env.JWT_COOKIE_EXPIRE * 24 * 60 * 60 * 1000
         ),
-        httpOnly: true
+        httpOnly: true,
+        sameSite: process.env.NODE_ENV === 'production' ? 'None' : 'Lax',
+        secure: process.env.NODE_ENV === 'production', // Only secure in production
+        domain: process.env.NODE_ENV === 'production' ? undefined : 'localhost'
     };
 
-    if (process.env.NODE_ENV === 'production') {
-        options.secure = true;
-    }
+    // Debug log for cookie options
+    console.log('Setting auth cookie with options:', options);
 
     res
         .status(statusCode)
         .cookie('token', token, options)
         .json({
             success: true,
-            token
+            token,
+            data: {
+                _id: user._id,
+                username: user.username,
+                email: user.email,
+                points: user.points || 0,
+                totalTasksCompleted: user.totalTasksCompleted || 0,
+                totalRewardsRedeemed: user.totalRewardsRedeemed || 0
+            }
         });
 };

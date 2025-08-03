@@ -1,6 +1,17 @@
 const mongoose = require('mongoose');
 
 const connectDB = async () => {
+    // Validate MONGO_URI
+    if (
+        !process.env.MONGO_URI ||
+        process.env.MONGO_URI.includes('your_mongodb_connection_string_here') ||
+        process.env.MONGO_URI.includes('<db_password>')
+    ) {
+        console.error('❌ ERROR: Invalid or placeholder MONGO_URI.');
+        console.error('Please set a valid MongoDB connection string in backend/config/config.env');
+        process.exit(1);
+    }
+
     try {
         // Set mongoose options
         mongoose.set('strictQuery', false);

@@ -1,5 +1,6 @@
 'use client';
 
+import { useAuth } from '@/lib/auth-context';
 import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { usePathname } from 'next/navigation';
@@ -7,54 +8,10 @@ import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
 import { Home, CheckSquare, Gift, User, Leaf, Star } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
-import { mockAPI } from '@/lib/mock-api';
 
 export function Navigation() {
   const pathname = usePathname();
-  const [userPoints, setUserPoints] = useState(0);
-  const [isLoading, setIsLoading] = useState(true);
-
-  // Fetch user points on component mount
-  useEffect(() => {
-    fetchUserPoints();
-  }, []);
-
-  const fetchUserPoints = async () => {
-    try {
-      // Try backend first, fallback to mock API
-      let response;
-      try {
-        response = await fetch('http://localhost:5001/api/v1/auth/me', {
-          method: 'GET',
-          credentials: 'include',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-        });
-        
-        if (response.ok) {
-          const data = await response.json();
-          if (data.success) {
-            setUserPoints(data.data.points || 0);
-            setIsLoading(false);
-            return;
-          }
-        }
-      } catch (error) {
-        console.log('Backend not available, using mock data');
-      }
-
-      // Fallback to mock API
-      const mockData = await mockAPI.getUser();
-      if (mockData.success) {
-        setUserPoints(mockData.data.points || 0);
-      }
-    } catch (error) {
-      console.error('Error fetching user points:', error);
-    } finally {
-      setIsLoading(false);
-    }
-  };
+  const { user, isAuthenticated, isLoading, logout } = useAuth();
 
   const navItems = [
     { href: '/', label: 'Home', icon: Home },
@@ -93,12 +50,34 @@ export function Navigation() {
         </div>
 
         <div className="flex items-center space-x-4">
-          <Badge variant="secondary" className="hidden sm:flex items-center space-x-1 bg-white/20 text-white border-white/20">
-            <Star className="h-3 w-3 text-yellow-400" />
-            <span className="font-medium">
-              {isLoading ? '...' : userPoints.toLocaleString()} points
-            </span>
-          </Badge>
+          {isLoading ? (
+            <div className="h-8 w-24 bg-white/20 rounded-md animate-pulse" />
+          ) : isAuthenticated && user ? (
+            <>
+              <Badge variant="secondary" className="hidden sm:flex items-center space-x-1 bg-white/20 text-white border-white/20">
+                <Star className="h-3 w-3 text-yellow-400" />
+                <span className="font-medium">
+                  {(user as any).points?.toLocaleString() || 0} points
+                </span>
+              </Badge>
+              <Button onClick={logout} variant="ghost" size="sm" className="text-white/90 hover:text-white hover:bg-white/10">
+                Logout
+              </Button>
+            </>
+          ) : (
+            <>
+              <Link href="/login">
+                <Button variant="ghost" size="sm" className="text-white/90 hover:text-white hover:bg-white/10">
+                  Login
+                </Button>
+              </Link>
+              <Link href="/signup">
+                <Button variant="secondary" size="sm" className="bg-white/20 text-white hover:bg-white/30">
+                  Sign Up
+                </Button>
+              </Link>
+            </>
+          )}
           <ThemeToggle />
         </div>
       </div>

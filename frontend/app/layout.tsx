@@ -3,11 +3,10 @@ import type { Metadata } from "next"
 import "./globals.css"
 import { ThemeProvider } from "@/components/theme-provider"
 import { Navigation } from "@/components/navigation"
+import { AuthProvider } from "@/lib/auth-context"
 
 export const metadata: Metadata = {
-  title: "HabitVest - Gamify Your Habits",
-  description: "Turn your tasks into rewards with HabitVest - the gamified habit tracking app",
-  generator: "Next.js",
+// ... existing code ...
 }
 
 export default function RootLayout({
@@ -18,10 +17,12 @@ export default function RootLayout({
   return (
     <html lang="en" suppressHydrationWarning>
       <body>
-        <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
-          <Navigation />
-          <main>{children}</main>
-        </ThemeProvider>
+        <AuthProvider>
+          <ThemeProvider attribute="class" defaultTheme="system" enableSystem disableTransitionOnChange>
+            <Navigation />
+            <main>{children}</main>
+          </ThemeProvider>
+        </AuthProvider>
       </body>
     </html>
   )
