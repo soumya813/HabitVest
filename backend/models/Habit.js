@@ -13,10 +13,9 @@ const HabitSchema = new mongoose.Schema({
         maxlength: [500, 'Description can not be more than 500 characters']
     },
     category: {
-        type: String,
-        required: [true, 'Please assign a category'],
-        enum: ['Health', 'Work', 'Finance', 'Education', 'Personal', 'Social', 'Other'],
-        default: 'Personal'
+        type: mongoose.Schema.Types.ObjectId,
+        ref: 'Category',
+        required: [true, 'Please assign a category']
     },
     points: {
         type: Number,

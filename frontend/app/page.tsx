@@ -92,8 +92,9 @@ export default function Dashboard() {
       });
       
       console.log('User data response:', response.status, response.ok);
+      const contentType = response.headers.get('content-type');
       
-      if (response.ok) {
+      if (response.ok && contentType && contentType.includes('application/json')) {
         const data = await response.json();
         console.log('User data received:', data);
         setUserData(data.data);
@@ -104,6 +105,9 @@ export default function Dashboard() {
       } else {
         const text = await response.text();
         console.error('Error fetching user data:', response.status, text);
+        if (!contentType || !contentType.includes('application/json')) {
+          console.error('Server returned non-JSON response - backend may be down or auth issue');
+        }
       }
     } catch (error) {
       console.error('Error fetching user data:', error);
@@ -119,14 +123,18 @@ export default function Dashboard() {
       });
       
       console.log('Habits response:', response.status, response.ok);
+      const contentType = response.headers.get('content-type');
       
-      if (response.ok) {
+      if (response.ok && contentType && contentType.includes('application/json')) {
         const data = await response.json();
         console.log('Habits data received:', data);
         setHabits(data.data || []);
       } else {
         const text = await response.text();
         console.error('Error fetching habits: ', response.status, text);
+        if (!contentType || !contentType.includes('application/json')) {
+          console.error('Server returned non-JSON response - backend may be down or auth issue');
+        }
       }
     } catch (error) {
       console.error('Error fetching habits:', error);
@@ -142,8 +150,9 @@ export default function Dashboard() {
       });
       
       console.log('Categories response:', response.status, response.ok);
+      const contentType = response.headers.get('content-type');
       
-      if (response.ok) {
+      if (response.ok && contentType && contentType.includes('application/json')) {
         const data = await response.json();
         console.log('Categories data received:', data);
         setCategories(data.data || []);
@@ -151,17 +160,21 @@ export default function Dashboard() {
         const text = await response.text();
         console.error('Error fetching categories: ', response.status, text);
         
+        if (!contentType || !contentType.includes('application/json')) {
+          console.error('Server returned non-JSON response - backend may be down or auth issue');
+        }
+        
         // If we get HTML error, it's likely auth issue - try to provide fallback categories
         if (text.includes('<!DOCTYPE')) {
           console.log('Got HTML error page - likely auth issue. Setting fallback categories.');
-          setCategories([
-            { _id: 'fallback-1', name: 'Health', color: '#EF4444', icon: 'heart' },
-            { _id: 'fallback-2', name: 'Work', color: '#3B82F6', icon: 'briefcase' },
-            { _id: 'fallback-3', name: 'Finance', color: '#10B981', icon: 'dollar-sign' },
-            { _id: 'fallback-4', name: 'Education', color: '#8B5CF6', icon: 'book' },
-            { _id: 'fallback-5', name: 'Personal', color: '#F59E0B', icon: 'user' },
-          ]);
         }
+        setCategories([
+          { _id: 'fallback-1', name: 'Health', color: '#EF4444', icon: 'heart' },
+          { _id: 'fallback-2', name: 'Work', color: '#3B82F6', icon: 'briefcase' },
+          { _id: 'fallback-3', name: 'Finance', color: '#10B981', icon: 'dollar-sign' },
+          { _id: 'fallback-4', name: 'Education', color: '#8B5CF6', icon: 'book' },
+          { _id: 'fallback-5', name: 'Personal', color: '#F59E0B', icon: 'user' },
+        ]);
       }
     } catch (error) {
       console.error('Error fetching categories:', error);
@@ -199,11 +212,18 @@ export default function Dashboard() {
         credentials: 'include',
       });
 
-      if (response.ok) {
+      const contentType = response.headers.get('content-type');
+      if (response.ok && contentType && contentType.includes('application/json')) {
         const data = await response.json();
         // Refresh habits and user data
         await Promise.all([fetchHabits(), fetchUserData()]);
         console.log('Habit completed successfully:', data);
+      } else {
+        const text = await response.text();
+        console.error('Error completing habit:', response.status, text);
+        if (!contentType || !contentType.includes('application/json')) {
+          console.error('Server returned non-JSON response - backend may be down or auth issue');
+        }
       }
     } catch (error) {
       console.error('Error completing habit:', error);
@@ -595,7 +615,7 @@ export default function Dashboard() {
                     </div>
                     <div className="text-center">
                       <p className={`text-2xl font-bold text-gray-800 dark:text-gray-200 ${isLoading ? 'animate-pulse' : ''}`}>
-                        {isLoading ? '0' : calculatePortfolioSummary().streakDays}
+                        {isLoading ? '0' : (Number(calculatePortfolioSummary().streakDays) || 0)}
                       </p>
                       <p className="text-sm text-gray-600 dark:text-gray-400">Streak Days</p>
                     </div>

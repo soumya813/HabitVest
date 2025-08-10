@@ -100,7 +100,7 @@ exports.createHabit = async (req, res, next) => {
         // Validate category exists
         if (req.body.category) {
             const categoryExists = await Category.findOne({
-                name: req.body.category,
+                _id: req.body.category,
                 userId: req.user.id
             });
             
