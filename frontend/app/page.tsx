@@ -65,10 +65,32 @@ interface HabitData {
 
 export default function Dashboard() {
   // Get authenticated user from context
-  const { user, isAuthenticated, isLoading: authLoading } = useAuth();
+  const { user, isAuthenticated, isLoading: authLoading, setUserPoints } = useAuth();
   
   // State management
   const [userData, setUserData] = useState<UserData | null>(null);
+
+  // Always initialize and sync userData from context user for instant UI update
+  useEffect(() => {
+    if (user) {
+      setUserData(prev => {
+        if (!prev) {
+          return {
+            _id: user._id,
+            username: user.username || '',
+            points: user.points || 0,
+            totalTasksCompleted: user.totalTasksCompleted || 0,
+            totalRewardsRedeemed: user.totalRewardsRedeemed || 0,
+            // add other fields as needed
+          };
+        }
+        if (user.points !== undefined && user.points !== prev.points) {
+          return { ...prev, points: user.points! };
+        }
+        return prev;
+      });
+    }
+  }, [user]);
   const [habits, setHabits] = useState<HabitData[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [isLoading, setIsLoading] = useState(true);
@@ -215,6 +237,10 @@ export default function Dashboard() {
       const contentType = response.headers.get('content-type');
       if (response.ok && contentType && contentType.includes('application/json')) {
         const data = await response.json();
+        // Update points instantly if returned
+        if (typeof data.userPoints === 'number') {
+          setUserPoints(data.userPoints);
+        }
         // Refresh habits and user data
         await Promise.all([fetchHabits(), fetchUserData()]);
         console.log('Habit completed successfully:', data);

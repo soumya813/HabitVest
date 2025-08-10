@@ -23,12 +23,16 @@ interface AuthContextType {
   login: (token: string, user: User) => void;
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
+  setUserPoints: (points: number) => void;
   debug?: any; // For debugging purposes
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
+  const setUserPoints = (points: number) => {
+    setUser(prev => prev ? { ...prev, points } : prev);
+  };
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
   const [isLoading, setIsLoading] = useState(true);
@@ -157,6 +161,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       login, 
       logout,
       refreshUser,
+      setUserPoints,
       debug: { hasToken: !!token, hasUser: !!user, userKeys: user ? Object.keys(user) : [] }
     }}>
       {children}

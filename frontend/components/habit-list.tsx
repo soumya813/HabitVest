@@ -68,6 +68,8 @@ interface HabitListProps {
 
 export function HabitList({ habits: initialHabits = [], isLoading: initialLoading = false, onHabitComplete, showDetails }: HabitListProps) {
   const { toast } = useToast();
+  // Import setUserPoints from useAuth
+  const { setUserPoints } = require("@/lib/auth-context").useAuth();
   const [habits, setHabits] = useState<Habit[]>([])
   const [categories, setCategories] = useState<Category[]>([])
   const [isLoading, setIsLoading] = useState(true)
@@ -139,7 +141,11 @@ export function HabitList({ habits: initialHabits = [], isLoading: initialLoadin
       })
       
       const contentType = response.headers.get('content-type');
-      if (response.ok) {
+      if (response.ok && contentType && contentType.includes('application/json')) {
+        const data = await response.json();
+        if (typeof data.userPoints === 'number') {
+          setUserPoints(data.userPoints);
+        }
         fetchHabits(completed ? 'Habit marked as complete!' : 'Habit marked as incomplete!')
       } else {
         const text = await response.text();
@@ -272,10 +278,11 @@ export function HabitList({ habits: initialHabits = [], isLoading: initialLoadin
                     <Button
                       variant="ghost"
                       size="sm"
-                      onClick={() => toggleHabitCompletion(habit._id, !habit.completedToday)}
+                      onClick={() => {
+                        if (!habit.completedToday) toggleHabitCompletion(habit._id, true);
+                      }}
                       className={`p-1 h-8 w-8 ${habit.completedToday ? 'text-green-600' : 'text-gray-400'}`}
-                      // Remove shouldCompleteToday, just enable always for now
-                      // disabled={!habit.shouldCompleteToday}
+                      disabled={habit.completedToday}
                     >
                       {habit.completedToday ? (
                         <CheckCircle2 className="w-6 h-6" />
