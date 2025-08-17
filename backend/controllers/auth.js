@@ -9,6 +9,15 @@ exports.register = async (req, res, next) => {
     try {
         const { username, email, password } = req.body;
 
+        // Debug: log incoming registration payload (without password in logs)
+        try {
+            const safeBody = { ...req.body };
+            if (safeBody.password) safeBody.password = '***REDACTED***';
+            console.log('Register payload:', safeBody);
+        } catch (e) {
+            // ignore
+        }
+
         // Validate required fields
         if (!username || !email || !password) {
             return res.status(400).json({ success: false, msg: 'Please provide username, email and password' });
@@ -39,6 +48,23 @@ exports.register = async (req, res, next) => {
         sendTokenResponse(user, 200, res);
     } catch (err) {
         console.error('Registration error:', err);
+        // Provide more detailed error messages in development to help debugging
+        if (process.env.NODE_ENV === 'development') {
+            // If Mongoose validation error, include messages
+            let message = 'Registration failed. Please try again.';
+            try {
+                if (err.name === 'ValidationError') {
+                    // collect messages
+                    message = Object.values(err.errors).map(e => e.message).join(' | ');
+                } else if (err.message) {
+                    message = err.message;
+                }
+            } catch (parseErr) {
+                // fallback
+            }
+            return res.status(400).json({ success: false, msg: message });
+        }
+
         res.status(400).json({ success: false, msg: 'Registration failed. Please try again.' });
     }
 };
@@ -98,9 +124,23 @@ exports.getMe = async (req, res, next) => {
     try {
         const user = await User.findById(req.user.id);
 
+        // Include XP/level summary for frontend convenience
+        const xpSummary = {
+            xp: user.xp || 0,
+            level: user.level || 1,
+            totalXp: user.totalXp || 0,
+            xpToNext: typeof user.xpToNext === 'function' ? user.xpToNext() : undefined
+        };
+
         res.status(200).json({
             success: true,
-            data: user
+            data: {
+                ...user.toObject(),
+                xp: xpSummary.xp,
+                level: xpSummary.level,
+                totalXp: xpSummary.totalXp,
+                xpToNext: xpSummary.xpToNext
+            }
         });
     } catch (err) {
         console.error('Get user error:', err);
@@ -138,6 +178,9 @@ const sendTokenResponse = (user, statusCode, res) => {
                 username: user.username,
                 email: user.email,
                 points: user.points || 0,
+                xp: user.xp || 0,
+                level: user.level || 1,
+                totalXp: user.totalXp || 0,
                 totalTasksCompleted: user.totalTasksCompleted || 0,
                 totalRewardsRedeemed: user.totalRewardsRedeemed || 0
             }

@@ -86,7 +86,7 @@ export function TaskList({ tasks, onTaskComplete, onTaskUpdate, onTaskDelete }: 
                     </Badge>
                     <Badge variant="outline" className="text-xs">
                       <Star className="w-3 h-3 mr-1" />
-                      {task.points} pts
+                      {task.points} XP
                     </Badge>
                   </div>
 

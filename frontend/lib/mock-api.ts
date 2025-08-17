@@ -46,6 +46,8 @@ let mockUser = {
   _id: '676789ab123456789abcdef0',
   username: 'testuser',
   points: 150,
+  // xp mirrors points for now; backend will be authoritative in real usage
+  xp: 150,
   totalTasksCompleted: 3,
   totalRewardsRedeemed: 1,
 };
@@ -132,7 +134,7 @@ let mockRewards: Reward[] = [
 // Mock API functions
 export const mockAPI = {
   // Task APIs
-  getTasks: async (params?: any): Promise<{ success: boolean; data: Task[]; count: number }> => {
+  getTasks: async (params?: any): Promise<{ success: boolean; data: Task[]; count: number; userXp?: number; userPoints?: number }> => {
     let filteredTasks = [...mockTasks];
     
     if (params?.completed !== undefined) {
@@ -147,6 +149,8 @@ export const mockAPI = {
       success: true,
       data: filteredTasks,
       count: filteredTasks.length,
+      userXp: mockUser.xp ?? mockUser.points,
+      userPoints: mockUser.points,
     };
   },
 
@@ -168,7 +172,7 @@ export const mockAPI = {
     return { success: true, data: newTask };
   },
 
-  completeTask: async (taskId: string): Promise<{ success: boolean; data: Task; message: string }> => {
+  completeTask: async (taskId: string): Promise<{ success: boolean; data: Task; message: string; userXp?: number; userPoints?: number }> => {
     const taskIndex = mockTasks.findIndex(task => task._id === taskId);
     if (taskIndex === -1) {
       throw new Error('Task not found');
@@ -181,13 +185,17 @@ export const mockAPI = {
 
     task.completed = true;
     task.completedAt = new Date().toISOString();
-    mockUser.points += task.points;
-    mockUser.totalTasksCompleted += 1;
+  mockUser.points += task.points;
+  // keep xp in sync for migration
+  mockUser.xp = mockUser.points;
+  mockUser.totalTasksCompleted += 1;
 
     return {
       success: true,
       data: { ...task, user: { ...mockUser } },
-      message: `Task completed! You earned ${task.points} points.`,
+      message: `Task completed! You earned ${task.points} XP.`,
+      userXp: mockUser.xp ?? mockUser.points,
+      userPoints: mockUser.points,
     };
   },
 
@@ -225,7 +233,7 @@ export const mockAPI = {
   },
 
   // Reward APIs
-  getRewards: async (params?: any): Promise<{ success: boolean; data: Reward[]; count: number; userPoints?: number }> => {
+  getRewards: async (params?: any): Promise<{ success: boolean; data: Reward[]; count: number; userXp?: number; userPoints?: number }> => {
     let filteredRewards = [...mockRewards];
     
     if (params?.isRedeemed !== undefined) {
@@ -250,11 +258,13 @@ export const mockAPI = {
       success: true,
       data: filteredRewards,
       count: filteredRewards.length,
+      // expose xp as primary client-side field, keep userPoints for compatibility
+      userXp: mockUser.xp ?? mockUser.points,
       userPoints: mockUser.points,
     };
   },
 
-  getAvailableRewards: async (): Promise<{ success: boolean; data: Reward[]; count: number; userPoints: number }> => {
+  getAvailableRewards: async (): Promise<{ success: boolean; data: Reward[]; count: number; userXp?: number; userPoints: number }> => {
     const availableRewards = mockRewards
       .filter(reward => reward.isAvailable && !reward.isRedeemed)
       .map(reward => ({
@@ -267,6 +277,7 @@ export const mockAPI = {
       success: true,
       data: availableRewards,
       count: availableRewards.length,
+      userXp: mockUser.xp ?? mockUser.points,
       userPoints: mockUser.points,
     };
   },
@@ -304,19 +315,22 @@ export const mockAPI = {
       throw new Error('Reward is not available');
     }
 
-    if (mockUser.points < reward.points) {
-      throw new Error(`Insufficient points. You need ${reward.points} points but only have ${mockUser.points} points.`);
+    // prefer xp but fallback to points
+    const userBalance = mockUser.xp ?? mockUser.points;
+    if (userBalance < reward.points) {
+      throw new Error(`Insufficient XP. You need ${reward.points} XP but only have ${userBalance} XP.`);
     }
 
     reward.isRedeemed = true;
     reward.redeemedAt = new Date().toISOString();
     mockUser.points -= reward.points;
+    mockUser.xp = mockUser.points;
     mockUser.totalRewardsRedeemed += 1;
 
     return {
       success: true,
       data: { ...reward, user: { ...mockUser } },
-      message: `Reward redeemed successfully! ${reward.points} points deducted.`,
+  message: `Reward redeemed successfully! ${reward.points} XP deducted.`,
     };
   },
 

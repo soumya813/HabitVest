@@ -95,7 +95,7 @@ export function TaskForm({ onSubmit, onCancel, initialData }: TaskFormProps) {
               </div>
 
               <div>
-                <Label htmlFor="points">Points</Label>
+                <Label htmlFor="points">XP</Label>
                 <Input
                   id="points"
                   type="number"

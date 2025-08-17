@@ -325,7 +325,7 @@ export function HabitList({ habits: initialHabits = [], isLoading: initialLoadin
                         </span>
                         <span className="flex items-center gap-1">
                           <Target className="w-3 h-3" />
-                          <span className="font-semibold text-gray-700 dark:text-gray-200">{habit.points} points</span>
+                          <span className="font-semibold text-gray-700 dark:text-gray-200">{habit.points} XP</span>
                         </span>
                         {habit.streak > 0 && (
                           <span className="flex items-center gap-1">

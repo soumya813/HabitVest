@@ -309,7 +309,7 @@ export function HabitForm({ categories: propCategories, onHabitCreated, onSubmit
             </div>
 
             <div className="space-y-2">
-              <Label htmlFor="points">Points per completion</Label>
+              <Label htmlFor="points">XP per completion</Label>
               <Input
                 id="points"
                 type="number"

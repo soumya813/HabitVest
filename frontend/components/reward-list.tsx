@@ -9,13 +9,15 @@ import type { Reward } from '@/lib/mock-api';
 
 interface RewardListProps {
   rewards: Reward[];
-  userPoints: number;
+  // prefer userXp but keep userPoints for compatibility
+  userPoints?: number;
+  userXp?: number;
   onRewardRedeem: (rewardId: string) => void;
   onRewardUpdate: (rewardId: string, data: Partial<Reward>) => void;
   onRewardDelete: (rewardId: string) => void;
 }
 
-export function RewardList({ rewards, userPoints, onRewardRedeem, onRewardUpdate, onRewardDelete }: RewardListProps) {
+export function RewardList({ rewards, userPoints, userXp, onRewardRedeem, onRewardUpdate, onRewardDelete }: RewardListProps) {
   const getTypeIcon = (type: string) => {
     switch (type) {
       case 'virtual':
@@ -59,8 +61,9 @@ export function RewardList({ rewards, userPoints, onRewardRedeem, onRewardUpdate
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {rewards.map((reward) => {
-        const canAfford = userPoints >= reward.points;
-        const pointsNeeded = Math.max(0, reward.points - userPoints);
+        const balance = (typeof userXp === 'number') ? userXp : (userPoints ?? 0);
+        const canAfford = balance >= reward.points;
+        const pointsNeeded = Math.max(0, reward.points - balance);
 
         return (
           <Card 
@@ -87,7 +90,7 @@ export function RewardList({ rewards, userPoints, onRewardRedeem, onRewardUpdate
                       </Badge>
                       <Badge variant="outline" className="text-yellow-600">
                         <Star className="w-3 h-3 mr-1" />
-                        {reward.points} pts
+                        {reward.points} XP
                       </Badge>
                     </div>
                   </div>
@@ -140,7 +143,7 @@ export function RewardList({ rewards, userPoints, onRewardRedeem, onRewardUpdate
                   ) : (
                     <div className="flex items-center gap-2 text-orange-600 text-sm">
                       <AlertCircle className="w-4 h-4" />
-                      <span>Need {pointsNeeded} more points</span>
+                      <span>Need {pointsNeeded} more XP</span>
                     </div>
                   )}
                 </div>
@@ -172,10 +175,10 @@ export function RewardList({ rewards, userPoints, onRewardRedeem, onRewardUpdate
                   </Button>
                 </div>
 
-                {!reward.isRedeemed && reward.isAvailable && (
+        {!reward.isRedeemed && reward.isAvailable && (
                   <Button
-                    onClick={() => onRewardRedeem(reward._id)}
-                    disabled={!canAfford}
+          onClick={() => onRewardRedeem(reward._id)}
+          disabled={!canAfford}
                     size="sm"
                     className={canAfford ? 'bg-green-600 hover:bg-green-700' : ''}
                   >

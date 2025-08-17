@@ -28,6 +28,7 @@ export default function TasksPage() {
   const [priorityFilter, setPriorityFilter] = useState<'all' | 'high' | 'medium' | 'low'>('all');
   const [loading, setLoading] = useState(true);
   const [userPoints, setUserPoints] = useState(0);
+  const [userXp, setUserXp] = useState<number | undefined>(undefined);
 
   // Mock user ID - in real app, get from auth context
   const userId = '676789ab123456789abcdef0';
@@ -51,8 +52,13 @@ export default function TasksPage() {
 
       const data = await mockAPI.getTasks(params);
       setTasks(data.data);
-      if (data.data.length > 0 && data.data[0].user.points !== undefined) {
+      // prefer xp if the mock API exposes it
+      if (typeof (data === null || data === void 0 ? void 0 : data.userXp) === 'number') {
+        setUserXp(data.userXp);
+        setUserPoints(data.userPoints ?? data.userXp ?? 0);
+      } else if (data.data.length > 0 && data.data[0].user.points !== undefined) {
         setUserPoints(data.data[0].user.points);
+        setUserXp(data.data[0].user.points);
       }
     } catch (error) {
       console.error('Error fetching tasks:', error);
@@ -134,7 +140,7 @@ export default function TasksPage() {
         <div>
           <h1 className="text-3xl font-bold">Tasks</h1>
           <p className="text-muted-foreground">
-            Manage your tasks and earn points • Current Points: {userPoints}
+            Manage your tasks and earn XP  Current XP: {typeof userXp === 'number' ? userXp : userPoints}
           </p>
         </div>
         <Button onClick={() => setShowTaskForm(true)}>

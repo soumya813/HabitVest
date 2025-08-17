@@ -94,7 +94,7 @@ export function HabitList({ habits, isLoading, onHabitComplete }: HabitListProps
             
             <div className="flex items-center gap-2">
               <p className="text-xs text-gray-500 dark:text-gray-500">
-                {habit.points} pts
+                {habit.points} XP
               </p>
               <Badge 
                 variant="secondary" 

@@ -125,12 +125,20 @@ exports.updateTask = async (req, res, next) => {
         if (req.body.completed === true && !task.completed) {
             req.body.completedAt = new Date();
             
-            // Award points to user
+            // Award points and XP to user
             const user = await User.findById(task.user);
             if (user) {
                 user.points += task.points || 10;
                 user.totalTasksCompleted += 1;
-                await user.save();
+
+                // XP multiplier: task.points * 10 (matches habits logic)
+                const xpAmount = Math.max(0, Math.floor((task.points || 10) * 10));
+                // set points/totalTasksCompleted before calling addXp so save() persists both
+                user.points = user.points;
+                user.totalTasksCompleted = user.totalTasksCompleted;
+                const xpResult = await user.addXp(xpAmount);
+                // attach for potential use later
+                res.locals.xpResult = xpResult;
             }
         }
 
@@ -138,7 +146,7 @@ exports.updateTask = async (req, res, next) => {
         if (req.body.completed === false && task.completed) {
             req.body.completedAt = null;
             
-            // Remove points from user
+            // Remove points from user (do not remove XP/levels)
             const user = await User.findById(task.user);
             if (user) {
                 user.points = Math.max(0, user.points - (task.points || 10));
@@ -224,12 +232,14 @@ exports.completeTask = async (req, res, next) => {
         task.completedAt = new Date();
         await task.save();
 
-        // Award points to user
+        // Award points and XP to user
         const user = await User.findById(task.user);
+        let xpResult = null;
         if (user) {
             user.points += task.points || 10;
             user.totalTasksCompleted += 1;
-            await user.save();
+            const xpAmount = Math.max(0, Math.floor((task.points || 10) * 10));
+            xpResult = await user.addXp(xpAmount);
         }
 
         const updatedTask = await Task.findById(req.params.id)
@@ -245,7 +255,8 @@ exports.completeTask = async (req, res, next) => {
         res.status(200).json({
             success: true,
             data: updatedTask,
-            message: `Task completed! You earned ${task.points || 10} points.`
+            message: `Task completed! You earned ${task.points || 10} points.`,
+            xp: xpResult
         });
     } catch (err) {
         res.status(400).json({ 

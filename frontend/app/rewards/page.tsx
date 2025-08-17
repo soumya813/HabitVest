@@ -28,6 +28,7 @@ export default function RewardsPage() {
   const [typeFilter, setTypeFilter] = useState<'all' | 'virtual' | 'physical' | 'experience'>('all');
   const [loading, setLoading] = useState(true);
   const [userPoints, setUserPoints] = useState(0);
+  const [userXp, setUserXp] = useState<number | undefined>(undefined);
 
   // Mock user ID - in real app, get from auth context
   const userId = '676789ab123456789abcdef0';
@@ -58,10 +59,16 @@ export default function RewardsPage() {
       }
 
       setRewards(data.data);
-      if (data.userPoints !== undefined) {
+      // prefer userXp from API, fallback to userPoints
+      if (typeof (data === null || data === void 0 ? void 0 : data.userXp) === 'number') {
+        setUserXp(data.userXp);
+        setUserPoints(data.userPoints ?? data.userXp ?? 0);
+      } else if (data.userPoints !== undefined) {
         setUserPoints(data.userPoints);
+        setUserXp(data.userPoints);
       } else if (data.data.length > 0 && data.data[0].user.points !== undefined) {
         setUserPoints(data.data[0].user.points);
+        setUserXp(data.data[0].user.points);
       }
     } catch (error) {
       console.error('Error fetching rewards:', error);
@@ -143,7 +150,7 @@ export default function RewardsPage() {
         <div>
           <h1 className="text-3xl font-bold">Rewards</h1>
           <p className="text-muted-foreground">
-            Redeem your points for rewards • Current Points: {userPoints}
+            Redeem rewards using XP  Current XP: {typeof userXp === 'number' ? userXp : userPoints}
           </p>
         </div>
         <Button onClick={() => setShowRewardForm(true)}>
@@ -219,6 +226,7 @@ export default function RewardsPage() {
       <RewardList
         rewards={filteredRewards}
         userPoints={userPoints}
+        userXp={userXp}
         onRewardRedeem={handleRewardRedeem}
         onRewardUpdate={handleRewardUpdate}
         onRewardDelete={handleRewardDelete}

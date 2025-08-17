@@ -57,7 +57,7 @@ export function Navigation() {
               <Badge variant="secondary" className="hidden sm:flex items-center space-x-1 bg-white/20 text-white border-white/20">
                 <Star className="h-3 w-3 text-yellow-400" />
                 <span className="font-medium">
-                  {(user as any).points?.toLocaleString() || 0} points
+                  {((user as any).xp ?? (user as any).points)?.toLocaleString() || 0} XP
                 </span>
               </Badge>
               <Button onClick={logout} variant="ghost" size="sm" className="text-white/90 hover:text-white hover:bg-white/10">

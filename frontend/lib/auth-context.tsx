@@ -8,7 +8,13 @@ interface User {
   name?: string;
   username?: string;
   email: string;
+  // legacy "points" kept for compatibility with older UI code
   points?: number;
+  // New XP/level fields
+  xp?: number;
+  level?: number;
+  xpToNext?: number;
+  totalXp?: number;
   totalTasksCompleted?: number;
   totalRewardsRedeemed?: number;
   createdAt?: string;
@@ -24,6 +30,8 @@ interface AuthContextType {
   logout: () => Promise<void>;
   refreshUser: () => Promise<void>;
   setUserPoints: (points: number) => void;
+  // convenience alias for XP-aware code
+  setUserXp?: (xp: number) => void;
   debug?: any; // For debugging purposes
 }
 
@@ -31,7 +39,8 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
 export const AuthProvider = ({ children }: { children: ReactNode }) => {
   const setUserPoints = (points: number) => {
-    setUser(prev => prev ? { ...prev, points } : prev);
+  // Keep legacy points field in sync, but also set xp for the new XP-based UI
+  setUser(prev => prev ? { ...prev, points, xp: points } : prev);
   };
   const [user, setUser] = useState<User | null>(null);
   const [token, setToken] = useState<string | null>(null);
@@ -162,6 +171,7 @@ export const AuthProvider = ({ children }: { children: ReactNode }) => {
       logout,
       refreshUser,
       setUserPoints,
+      setUserXp: (xp: number) => setUser(prev => prev ? { ...prev, xp } : prev),
       debug: { hasToken: !!token, hasUser: !!user, userKeys: user ? Object.keys(user) : [] }
     }}>
       {children}

@@ -152,7 +152,7 @@ export default function ProfilePage() {
               <div className="flex justify-center items-center gap-2 mt-2">
                 <Badge variant="secondary" className="flex items-center gap-1">
                   <Crown className="h-3 w-3" />
-                  {user.points || 0} points
+                  {(user.xp ?? user.points) || 0} XP
                 </Badge>
               </div>
             </CardHeader>
@@ -259,9 +259,9 @@ export default function ProfilePage() {
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-center">
                 <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
                   <p className="text-2xl font-bold text-green-600 dark:text-green-400">
-                    {user.points || 0}
+                    {(user.xp ?? user.points) || 0}
                   </p>
-                  <p className="text-sm text-gray-600 dark:text-gray-400">Total Points</p>
+                  <p className="text-sm text-gray-600 dark:text-gray-400">Total XP</p>
                 </div>
                 <div className="bg-gray-50 dark:bg-gray-700 p-4 rounded-lg">
                   <p className="text-2xl font-bold text-blue-600 dark:text-blue-400">

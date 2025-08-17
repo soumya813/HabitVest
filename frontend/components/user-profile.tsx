@@ -81,7 +81,7 @@ export function UserProfile() {
             </p>
             <div className="flex items-center text-xs text-muted-foreground">
               <Crown className="mr-1 h-3 w-3" />
-              {user.points || 0} points
+              {(((user as any).xp ?? (user as any).points) || 0)} XP
             </div>
           </div>
         </DropdownMenuLabel>

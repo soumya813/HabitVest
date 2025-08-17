@@ -21,7 +21,7 @@ export function RewardForm({ onSubmit, onCancel, initialData }: RewardFormProps)
   const [formData, setFormData] = useState({
     name: initialData?.name || '',
     description: initialData?.description || '',
-    points: initialData?.points || 50,
+  points: initialData?.points || 50,
     category: initialData?.category || '',
     type: initialData?.type || 'virtual',
     isAvailable: initialData?.isAvailable ?? true,
@@ -79,7 +79,7 @@ export function RewardForm({ onSubmit, onCancel, initialData }: RewardFormProps)
 
             <div className="grid grid-cols-2 gap-4">
               <div>
-                <Label htmlFor="points">Points Cost *</Label>
+                <Label htmlFor="points">XP Cost *</Label>
                 <Input
                   id="points"
                   type="number"

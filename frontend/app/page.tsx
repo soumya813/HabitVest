@@ -33,7 +33,8 @@ import {
 interface UserData {
   _id: string;
   username: string;
-  points: number;
+  xp?: number;
+  level?: number;
   totalTasksCompleted: number;
   totalRewardsRedeemed: number;
 }
@@ -78,14 +79,18 @@ export default function Dashboard() {
           return {
             _id: user._id,
             username: user.username || '',
-            points: user.points || 0,
+            xp: user.xp || 0,
+            level: user.level || 1,
             totalTasksCompleted: user.totalTasksCompleted || 0,
             totalRewardsRedeemed: user.totalRewardsRedeemed || 0,
             // add other fields as needed
           };
         }
-        if (user.points !== undefined && user.points !== prev.points) {
-          return { ...prev, points: user.points! };
+        if (user.xp !== undefined && user.xp !== prev.xp) {
+          return { ...prev, xp: user.xp };
+        }
+        if (user.level !== undefined && user.level !== prev.level) {
+          return { ...prev, level: user.level };
         }
         return prev;
       });
@@ -120,10 +125,12 @@ export default function Dashboard() {
         const data = await response.json();
         console.log('User data received:', data);
         setUserData(data.data);
-        
-        // Calculate progress based on points
-        const pointsInCurrentLevel = (data.data.points || 0) % 100;
-        setProgressPercentage(pointsInCurrentLevel);
+
+        // Calculate progress based on xp in current level (backend returns xp and xpToNext)
+        const xp = data.data.xp ?? data.data.points ?? 0;
+        const xpToNext = data.data.xpToNext || 100; // fallback
+        const percentage = xpToNext > 0 ? Math.round((xp / xpToNext) * 100) : 0;
+        setProgressPercentage(Math.max(0, Math.min(100, percentage)));
       } else {
         const text = await response.text();
         console.error('Error fetching user data:', response.status, text);
@@ -237,9 +244,10 @@ export default function Dashboard() {
       const contentType = response.headers.get('content-type');
       if (response.ok && contentType && contentType.includes('application/json')) {
         const data = await response.json();
-        // Update points instantly if returned
-        if (typeof data.userPoints === 'number') {
-          setUserPoints(data.userPoints);
+        // Update XP/points instantly if returned (prefer userXp)
+        const returnedXp = typeof data.userXp === 'number' ? data.userXp : (typeof data.userPoints === 'number' ? data.userPoints : undefined);
+        if (typeof returnedXp === 'number') {
+          setUserPoints(returnedXp);
         }
         // Refresh habits and user data
         await Promise.all([fetchHabits(), fetchUserData()]);
@@ -269,34 +277,35 @@ export default function Dashboard() {
       const reward = rewards.find(r => r.id === rewardId);
       if (!reward) return;
 
-      // Check if user has enough points
-      if (userData.points < reward.points) {
-        alert(`Insufficient points! You need ${reward.points} points but only have ${userData.points} points.`);
+      // Check if user has enough XP
+      const userXp = (userData.xp !== undefined) ? userData.xp : 0;
+      if (userXp < reward.points) {
+        alert(`Insufficient XP! You need ${reward.points} XP but only have ${userXp} XP.`);
         return;
       }
 
-      // Confirmation dialog
-      const confirmed = confirm(`Redeem "${reward.name}" for ${reward.points} points?`);
+  // Confirmation dialog
+  const confirmed = confirm(`Redeem "${reward.name}" for ${reward.points} XP?`);
       if (!confirmed) return;
 
-      // Update user points immediately for better UX
-      const newPoints = userData.points - reward.points;
+      // Update user XP immediately for better UX
+      const newXp = userXp - reward.points;
       setUserData(prev => prev ? {
         ...prev,
-        points: newPoints,
+        xp: newXp,
         totalRewardsRedeemed: prev.totalRewardsRedeemed + 1
       } : null);
 
-      // Update progress
-      const currentLevel = Math.floor(newPoints / 100);
-      const pointsInCurrentLevel = newPoints % 100;
-      setProgressPercentage(pointsInCurrentLevel);
+      // Update progress using xp value
+      const currentLevel = Math.floor(newXp / 100);
+      const xpInCurrentLevel = newXp % 100;
+      setProgressPercentage(xpInCurrentLevel);
 
       // Show success message
-      alert(`Successfully redeemed "${reward.name}"! ${reward.points} points deducted.`);
+  alert(`Successfully redeemed "${reward.name}"! ${reward.points} XP deducted.`);
 
       // In a real app, you would make an API call here to update the backend
-      console.log(`Reward redeemed! ${reward.points} points deducted`);
+  console.log(`Reward redeemed! ${reward.points} XP deducted`);
       
     } catch (error) {
       console.error('Error redeeming reward:', error);
@@ -310,7 +319,7 @@ export default function Dashboard() {
       {
         category: "Health",
         icon: Heart,
-        value: "500 pts",
+        value: "500 XP",
         change: "+0.0%",
         isPositive: true,
         color: "bg-red-500",
@@ -320,7 +329,7 @@ export default function Dashboard() {
       {
         category: "Learning",
         icon: BookOpen,
-        value: "350 pts",
+  value: "350 XP",
         change: "+0.0%",
         isPositive: true,
         color: "bg-blue-500",
@@ -330,7 +339,7 @@ export default function Dashboard() {
       {
         category: "Finance",
         icon: DollarSign,
-        value: "800 pts",
+  value: "800 XP",
         change: "+0.0%",
         isPositive: true,
         color: "bg-green-500",
@@ -347,7 +356,7 @@ export default function Dashboard() {
       Finance: 800
     };
 
-    return defaultInvestments.map(investment => {
+  return defaultInvestments.map(investment => {
       const categoryName = investment.category;
       const baseValue = baseValues[categoryName as keyof typeof baseValues] || 500;
       
@@ -374,7 +383,7 @@ export default function Dashboard() {
       
       return {
         ...investment,
-        value: `${dynamicValue.toLocaleString()} pts`,
+        value: `${dynamicValue.toLocaleString()} XP`,
         change: `${growthPercentage >= 0 ? '+' : ''}${growthPercentage.toFixed(1)}%`,
         isPositive: growthPercentage >= 0
       };
@@ -384,7 +393,7 @@ export default function Dashboard() {
   // Calculate dynamic portfolio summary
   const calculatePortfolioSummary = () => {
     const defaultSummary = {
-      totalValue: '1,650 pts',
+      totalValue: '1,650 XP',
       totalGrowth: '+0.0%',
       streakDays: 0,
       currentLevel: 'Level 1',
@@ -395,7 +404,7 @@ export default function Dashboard() {
 
     const dynamicPortfolio = calculatePortfolioValues();
     const totalValue = dynamicPortfolio.reduce((sum, item) => {
-      return sum + parseInt(item.value.replace(' pts', '').replace(',', ''));
+      return sum + parseInt(item.value.replace(' XP', '').replace(',', ''));
     }, 0);
 
     const averageGrowth = dynamicPortfolio.reduce((sum, item) => {
@@ -407,11 +416,11 @@ export default function Dashboard() {
       ? Math.round(habits.reduce((sum, h) => sum + h.streak, 0) / habits.length)
       : 0;
 
-    // Calculate level
-    const currentLevel = Math.max(1, Math.floor(userData.points / 150) + 1);
+  // Calculate level (fallback from userData.level if available)
+  const currentLevel = userData.level || Math.max(1, Math.floor((userData.xp || 0) / 150) + 1);
 
     return {
-      totalValue: `${totalValue.toLocaleString()} pts`,
+  totalValue: `${totalValue.toLocaleString()} XP`,
       totalGrowth: `${averageGrowth >= 0 ? '+' : ''}${averageGrowth.toFixed(1)}%`,
       streakDays: avgStreak,
       currentLevel: `Level ${currentLevel}`,
@@ -493,7 +502,7 @@ export default function Dashboard() {
                     <div>
                       <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Manage Tasks</h3>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Create and complete tasks to earn points
+                        Create and complete tasks to earn XP
                         {!isLoading && userData && (
                           <span className="block text-xs text-blue-600 font-medium">
                             {userData.totalTasksCompleted} tasks completed
@@ -519,7 +528,7 @@ export default function Dashboard() {
                     <div>
                       <h3 className="text-lg font-semibold text-gray-800 dark:text-gray-200">Browse Rewards</h3>
                       <p className="text-sm text-gray-600 dark:text-gray-400">
-                        Redeem your points for amazing rewards
+                        Redeem your XP for amazing rewards
                         {!isLoading && userData && (
                           <span className="block text-xs text-purple-600 font-medium">
                             {userData.totalRewardsRedeemed} rewards redeemed
@@ -546,10 +555,10 @@ export default function Dashboard() {
                 <div className="space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-2xl font-bold text-green-600">
-                      {isLoading ? '...' : userData?.points?.toLocaleString() || '0'}
+                      {isLoading ? '...' : (userData?.xp !== undefined ? userData.xp.toLocaleString() : '0')}
                     </span>
                     <Badge variant="secondary" className="bg-green-100 text-green-700">
-                      Total Points
+                      Total XP
                     </Badge>
                   </div>
                   <Progress value={progressPercentage} className="h-2" />
@@ -609,7 +618,7 @@ export default function Dashboard() {
                         <div>
                           <p className="text-sm text-gray-600 dark:text-gray-400 mb-1">{investment.category}</p>
                           <p className={`text-2xl font-bold text-gray-800 dark:text-gray-200 ${isLoading ? 'animate-pulse' : ''}`}>
-                            {isLoading ? '0 pts' : investment.value}
+                            {isLoading ? '0 XP' : investment.value}
                           </p>
                         </div>
                       </CardContent>
@@ -629,7 +638,7 @@ export default function Dashboard() {
                   <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                     <div className="text-center">
                       <p className={`text-2xl font-bold text-gray-800 dark:text-gray-200 ${isLoading ? 'animate-pulse' : ''}`}>
-                        {isLoading ? '0 pts' : calculatePortfolioSummary().totalValue}
+                        {isLoading ? '0 XP' : calculatePortfolioSummary().totalValue}
                       </p>
                       <p className="text-sm text-gray-600 dark:text-gray-400">Total Value</p>
                     </div>
@@ -668,7 +677,8 @@ export default function Dashboard() {
               </CardHeader>
               <CardContent className="space-y-3">
                 {rewards.map((reward) => {
-                  const canAfford = userData ? userData.points >= reward.points : false;
+                  const userXp = (userData && userData.xp !== undefined) ? userData.xp : 0;
+                  const canAfford = userXp >= reward.points;
                   const isDisabled = !userData || !canAfford;
                   
                   return (
@@ -684,8 +694,8 @@ export default function Dashboard() {
                         !userData 
                           ? 'Loading...' 
                           : canAfford 
-                            ? `Click to redeem ${reward.name} for ${reward.points} points`
-                            : `Need ${reward.points - (userData?.points || 0)} more points`
+                            ? `Click to redeem ${reward.name} for ${reward.points} XP`
+                            : `Need ${reward.points - userXp} more XP`
                       }
                     >
                       <div className="flex items-center justify-between">
@@ -695,12 +705,12 @@ export default function Dashboard() {
                           </div>
                           <div>
                             <p className="font-medium text-gray-800 dark:text-gray-200">{reward.name}</p>
-                            <p className="text-sm text-gray-600 dark:text-gray-400">{reward.points} pts</p>
+                            <p className="text-sm text-gray-600 dark:text-gray-400">{reward.points} XP</p>
                           </div>
                         </div>
                         {!canAfford && userData && (
                           <div className="text-xs text-red-500 font-medium">
-                            Need {reward.points - userData.points} more
+                            Need {reward.points - userXp} more
                           </div>
                         )}
                       </div>
@@ -712,7 +722,7 @@ export default function Dashboard() {
                   <div className="text-center">
                     <p className="text-sm text-gray-600 dark:text-gray-400 mb-2">Your Balance</p>
                     <p className="text-xl font-bold text-green-600">
-                      {isLoading ? '...' : userData?.points?.toLocaleString() || '0'} pts
+                      {isLoading ? '...' : (userData?.xp !== undefined ? userData.xp.toLocaleString() : '0')} XP
                     </p>
                   </div>
                 </div>
