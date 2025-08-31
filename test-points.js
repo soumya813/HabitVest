@@ -14,17 +14,19 @@ async function run() {
     console.log('Connected to MongoDB');
 
     // Create a test user
-  // use a valid email to satisfy model validation
-  let u = new User({ username: 'xp-tester', email: 'xp-tester@example.com', password: 'password123' });
+    // use a valid email to satisfy model validation
+    let u = new User({ username: 'points-tester', email: 'points-tester@example.com', password: 'password123' });
     await u.save();
-    console.log('Created user', u.username, 'level', u.level, 'xp', u.xp);
+    console.log('Created user', u.username, 'points', u.points);
 
-    // Add XP
-    const res1 = await u.addXp(150);
-    console.log('After +150 XP:', res1);
+    // Add points
+    u.points = (u.points || 0) + 150;
+    await u.save();
+    console.log('After +150 points:', { points: u.points });
 
-    const res2 = await u.addXp(1000);
-    console.log('After +1000 XP:', res2);
+    u.points = (u.points || 0) + 1000;
+    await u.save();
+    console.log('After +1000 points:', { points: u.points });
 
     // cleanup
     await User.deleteOne({ _id: u._id });

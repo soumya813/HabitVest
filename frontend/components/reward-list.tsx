@@ -9,15 +9,13 @@ import type { Reward } from '@/lib/mock-api';
 
 interface RewardListProps {
   rewards: Reward[];
-  // prefer userXp but keep userPoints for compatibility
-  userPoints?: number;
-  userXp?: number;
+  userPoints: number;
   onRewardRedeem: (rewardId: string) => void;
   onRewardUpdate: (rewardId: string, data: Partial<Reward>) => void;
   onRewardDelete: (rewardId: string) => void;
 }
 
-export function RewardList({ rewards, userPoints, userXp, onRewardRedeem, onRewardUpdate, onRewardDelete }: RewardListProps) {
+export function RewardList({ rewards, userPoints, onRewardRedeem, onRewardUpdate, onRewardDelete }: RewardListProps) {
   const getTypeIcon = (type: string) => {
     switch (type) {
       case 'virtual':
@@ -61,7 +59,7 @@ export function RewardList({ rewards, userPoints, userXp, onRewardRedeem, onRewa
   return (
     <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
       {rewards.map((reward) => {
-        const balance = (typeof userXp === 'number') ? userXp : (userPoints ?? 0);
+        const balance = userPoints;
         const canAfford = balance >= reward.points;
         const pointsNeeded = Math.max(0, reward.points - balance);
 
@@ -90,7 +88,7 @@ export function RewardList({ rewards, userPoints, userXp, onRewardRedeem, onRewa
                       </Badge>
                       <Badge variant="outline" className="text-yellow-600">
                         <Star className="w-3 h-3 mr-1" />
-                        {reward.points} XP
+                        {reward.points} Points
                       </Badge>
                     </div>
                   </div>
@@ -143,7 +141,7 @@ export function RewardList({ rewards, userPoints, userXp, onRewardRedeem, onRewa
                   ) : (
                     <div className="flex items-center gap-2 text-orange-600 text-sm">
                       <AlertCircle className="w-4 h-4" />
-                      <span>Need {pointsNeeded} more XP</span>
+                      <span>Need {pointsNeeded} more points</span>
                     </div>
                   )}
                 </div>

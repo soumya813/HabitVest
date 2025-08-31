@@ -234,28 +234,16 @@ exports.completeHabit = async (req, res, next) => {
 
         await habit.save();
 
-        // Update user points if needed and get new value
+        // Update user points if needed
         if (pointsDelta !== 0) {
-            // update points and also award XP based on habit.points (could be different)
             const userDoc = await User.findById(req.user.id);
             if (userDoc) {
                 userDoc.points = (userDoc.points || 0) + pointsDelta;
                 if (pointsDelta > 0) {
                     userDoc.totalTasksCompleted = (userDoc.totalTasksCompleted || 0) + 1;
                 }
-
-                // Award XP. Here we choose to award XP equal to habit.points * 10 as an example multiplier.
-                // This makes XP scale faster than simple points. Adjust multiplier as needed.
-                const xpAmount = Math.max(0, Math.floor(habit.points * 10));
-                const xpResult = await userDoc.addXp(xpAmount);
-
-                // Persist other changes (points, totals) that addXp already saved the doc, but ensure points are saved
-                userDoc.points = userDoc.points; // noop to keep linter happy
-
+                await userDoc.save();
                 userPoints = userDoc.points;
-
-                // include xp info in response
-                res.locals.xpResult = xpResult;
             } else {
                 userPoints = 0;
             }
@@ -264,13 +252,10 @@ exports.completeHabit = async (req, res, next) => {
             userPoints = userDoc.points;
         }
 
-        const xpResult = res.locals.xpResult || null;
-
         res.status(200).json({
             success: true,
             data: habit,
-            userPoints,
-            xp: xpResult
+            userPoints
         });
     } catch (err) {
         console.error('Complete habit error:', err);

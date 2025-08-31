@@ -2,7 +2,9 @@
 
 import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Card, CardContent, Ca          <p className="text-muted-foreground">
+            Redeem rewards using points. Current Points: {userPoints}
+          </p>escription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Plus, Gift, Star, Trophy, Target, Check } from 'lucide-react';
 import { RewardForm } from '../../components/reward-form';
@@ -94,17 +96,21 @@ export default function RewardsPage() {
       const data = await mockAPI.redeemReward(rewardId);
       fetchRewards();
       fetchRewardStats();
+      // Show success message
       alert(data.message);
     } catch (error) {
       console.error('Error redeeming reward:', error);
-      alert(error instanceof Error ? error.message : 'Failed to redeem reward');
+      if (error instanceof Error) {
+        alert(error.message);
+      }
     }
   };
 
   const handleRewardUpdate = async (rewardId: string, updateData: Partial<Reward>) => {
     try {
-      // This would be implemented when the backend supports updating rewards
-      console.log('Update reward:', rewardId, updateData);
+      // Mock API doesn't have update method, so we'll just refresh for now
+      fetchRewards();
+      fetchRewardStats();
     } catch (error) {
       console.error('Error updating reward:', error);
     }
@@ -120,7 +126,6 @@ export default function RewardsPage() {
     }
   };
 
-  // Filter rewards based on current filters
   const filteredRewards = rewards.filter(reward => {
     if (filter === 'available' && (reward.isRedeemed || !reward.isAvailable)) return false;
     if (filter === 'redeemed' && !reward.isRedeemed) return false;
@@ -139,7 +144,7 @@ export default function RewardsPage() {
         <div>
           <h1 className="text-3xl font-bold">Rewards</h1>
           <p className="text-muted-foreground">
-            Redeem rewards using points. Current Points: {userPoints}
+            Redeem rewards using XP  Current XP: {typeof userXp === 'number' ? userXp : userPoints}
           </p>
         </div>
         <Button onClick={() => setShowRewardForm(true)}>
@@ -152,15 +157,8 @@ export default function RewardsPage() {
       {stats && <RewardStats stats={stats} />}
 
       {/* Filters */}
-      <div className="flex flex-col sm:flex-row gap-4 items-start sm:items-center">
+      <div className="flex flex-wrap gap-4">
         <div className="flex gap-2">
-          <Button
-            variant={filter === 'all' ? 'default' : 'outline'}
-            size="sm"
-            onClick={() => setFilter('all')}
-          >
-            All
-          </Button>
           <Button
             variant={filter === 'available' ? 'default' : 'outline'}
             size="sm"
@@ -177,6 +175,13 @@ export default function RewardsPage() {
             <Check className="w-4 h-4 mr-1" />
             Redeemed
           </Button>
+          <Button
+            variant={filter === 'all' ? 'default' : 'outline'}
+            size="sm"
+            onClick={() => setFilter('all')}
+          >
+            All Rewards
+          </Button>
         </div>
 
         <div className="flex gap-2">
@@ -192,29 +197,30 @@ export default function RewardsPage() {
             size="sm"
             onClick={() => setTypeFilter('virtual')}
           >
-            💻 Virtual
+            Virtual
           </Button>
           <Button
             variant={typeFilter === 'physical' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setTypeFilter('physical')}
           >
-            🎁 Physical
+            Physical
           </Button>
           <Button
             variant={typeFilter === 'experience' ? 'default' : 'outline'}
             size="sm"
             onClick={() => setTypeFilter('experience')}
           >
-            🎭 Experience
+            Experience
           </Button>
         </div>
       </div>
 
-      {/* Rewards List */}
+      {/* Reward List */}
       <RewardList
         rewards={filteredRewards}
         userPoints={userPoints}
+        userXp={userXp}
         onRewardRedeem={handleRewardRedeem}
         onRewardUpdate={handleRewardUpdate}
         onRewardDelete={handleRewardDelete}

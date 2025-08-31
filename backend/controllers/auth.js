@@ -178,9 +178,6 @@ const sendTokenResponse = (user, statusCode, res) => {
                 username: user.username,
                 email: user.email,
                 points: user.points || 0,
-                xp: user.xp || 0,
-                level: user.level || 1,
-                totalXp: user.totalXp || 0,
                 totalTasksCompleted: user.totalTasksCompleted || 0,
                 totalRewardsRedeemed: user.totalRewardsRedeemed || 0
             }
