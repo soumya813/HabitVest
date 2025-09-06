@@ -41,7 +41,11 @@ export interface Reward {
   pointsNeeded?: number;
 }
 
-// Mock user data
+// Client-side persistence keys (browser only)
+const STORAGE_KEY = 'habitvest:mock_state_v1';
+const isBrowser = typeof window !== 'undefined';
+
+// Mock user data (will be loaded from localStorage when available)
 let mockUser = {
   _id: '676789ab123456789abcdef0',
   username: 'testuser',
@@ -50,7 +54,7 @@ let mockUser = {
   totalRewardsRedeemed: 1,
 };
 
-// Mock tasks data
+// Mock tasks data (will be loaded from localStorage when available)
 let mockTasks: Task[] = [
   {
     _id: '1',
@@ -129,6 +133,38 @@ let mockRewards: Reward[] = [
   },
 ];
 
+// Load persisted state from localStorage (browser only)
+function loadState() {
+  if (!isBrowser) return null;
+  try {
+    const raw = window.localStorage.getItem(STORAGE_KEY);
+    if (!raw) return null;
+    return JSON.parse(raw);
+  } catch (e) {
+    console.warn('Failed to load mock state from localStorage', e);
+    return null;
+  }
+}
+
+// Save current state to localStorage (browser only)
+function saveState() {
+  if (!isBrowser) return;
+  try {
+    const state = { mockUser, mockTasks, mockRewards };
+    window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
+  } catch (e) {
+    console.warn('Failed to save mock state to localStorage', e);
+  }
+}
+
+// Initialize from persisted state if available
+const _persisted = loadState();
+if (_persisted) {
+  if (Array.isArray(_persisted.mockTasks)) mockTasks = _persisted.mockTasks;
+  if (_persisted.mockUser) mockUser = _persisted.mockUser;
+  if (Array.isArray(_persisted.mockRewards)) mockRewards = _persisted.mockRewards;
+}
+
 // Mock API functions
 export const mockAPI = {
   // Task APIs
@@ -166,6 +202,7 @@ export const mockAPI = {
     };
     
     mockTasks.unshift(newTask);
+  saveState();
     return { success: true, data: newTask };
   },
 
@@ -185,6 +222,8 @@ export const mockAPI = {
     mockUser.points += task.points;
     mockUser.totalTasksCompleted += 1;
 
+  saveState();
+
     return {
       success: true,
       data: { ...task, user: { ...mockUser } },
@@ -200,6 +239,7 @@ export const mockAPI = {
     }
 
     mockTasks.splice(taskIndex, 1);
+  saveState();
     return { success: true, data: {} };
   },
 
@@ -288,6 +328,7 @@ export const mockAPI = {
     };
     
     mockRewards.unshift(newReward);
+  saveState();
     return { success: true, data: newReward };
   },
 
@@ -317,6 +358,8 @@ export const mockAPI = {
     mockUser.points -= reward.points;
     mockUser.totalRewardsRedeemed += 1;
 
+  saveState();
+
     return {
       success: true,
       data: { ...reward, user: { ...mockUser } },
@@ -331,6 +374,7 @@ export const mockAPI = {
     }
 
     mockRewards.splice(rewardIndex, 1);
+  saveState();
     return { success: true, data: {} };
   },
 

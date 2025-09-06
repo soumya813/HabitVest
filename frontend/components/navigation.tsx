@@ -6,7 +6,7 @@ import Link from 'next/link';
 import { usePathname } from 'next/navigation';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
-import { Home, CheckSquare, Gift, User, Leaf, Star } from 'lucide-react';
+import { Home, CheckSquare, Gift, User, Leaf, Star, Shield } from 'lucide-react';
 import { ThemeToggle } from '@/components/theme-toggle';
 
 export function Navigation() {
@@ -17,6 +17,7 @@ export function Navigation() {
     { href: '/', label: 'Home', icon: Home },
     { href: '/tasks', label: 'Tasks', icon: CheckSquare },
     { href: '/rewards', label: 'Rewards', icon: Gift },
+  { href: '/settings', label: 'Settings', icon: Shield },
     { href: '/profile', label: 'Profile', icon: User },
   ];
 

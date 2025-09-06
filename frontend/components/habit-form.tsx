@@ -71,7 +71,8 @@ const DEFAULT_CATEGORIES: Category[] = [
 ];
 
 export function HabitForm({ categories: propCategories, onHabitCreated, onSubmit, onCancel, initialData, isLoading }: HabitFormProps) {
-  const [categories, setCategories] = useState<Category[]>(propCategories && propCategories.length > 0 ? propCategories : DEFAULT_CATEGORIES)
+  // Do not default to DEFAULT_CATEGORIES here — keep empty so UI can block creation
+  const [categories, setCategories] = useState<Category[]>(propCategories && propCategories.length > 0 ? propCategories : [])
   const [categoriesLoading, setCategoriesLoading] = useState(false)
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [showForm, setShowForm] = useState(false)
@@ -121,17 +122,18 @@ export function HabitForm({ categories: propCategories, onHabitCreated, onSubmit
           }
         }
       } else {
-        // Use default categories if response is not ok
-        setCategories(DEFAULT_CATEGORIES)
+        // If backend didn't return categories, keep categories empty so the form
+        // shows the warning and prevents creating habits with fake ids.
+        setCategories([])
         if (!formData.category) {
-          setFormData(prev => ({ ...prev, category: DEFAULT_CATEGORIES[0]._id }))
+          setFormData(prev => ({ ...prev, category: '' }))
         }
       }
     } catch (error) {
-      // Use default categories if there's an error
-      setCategories(DEFAULT_CATEGORIES)
+      // Keep categories empty on error so user must create categories first.
+      setCategories([])
       if (!formData.category) {
-        setFormData(prev => ({ ...prev, category: DEFAULT_CATEGORIES[0]._id }))
+        setFormData(prev => ({ ...prev, category: '' }))
       }
     } finally {
       setCategoriesLoading(false);

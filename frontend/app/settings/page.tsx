@@ -31,23 +31,10 @@ export default function SettingsPage() {
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900">
-      {/* Header */}
-      <div className="bg-green-800 dark:bg-green-900 text-white px-6 py-4">
-        <div className="max-w-4xl mx-auto flex items-center space-x-4">
-          <Button
-            onClick={() => router.push('/')}
-            variant="ghost"
-            size="sm"
-            className="text-white hover:bg-white/10 p-2"
-          >
-            <ArrowLeft className="h-4 w-4" />
-          </Button>
-          <h1 className="text-xl font-bold">Settings</h1>
-        </div>
-      </div>
 
       {/* Main Content */}
       <div className="max-w-4xl mx-auto p-6">
+        <h1 className="text-2xl font-bold mb-4">Settings</h1>
         <div className="space-y-6">
           {/* Notifications Settings */}
           <Card className="shadow-sm dark:bg-gray-800 dark:border-gray-700">
