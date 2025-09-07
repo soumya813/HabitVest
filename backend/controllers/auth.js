@@ -139,7 +139,12 @@ exports.getMe = async (req, res, next) => {
                 xp: xpSummary.xp,
                 level: xpSummary.level,
                 totalXp: xpSummary.totalXp,
-                xpToNext: xpSummary.xpToNext
+                xpToNext: xpSummary.xpToNext,
+                notifications: user.notifications || {
+                    habitReminders: true,
+                    achievementAlerts: true,
+                    weeklySummary: true
+                }
             }
         });
     } catch (err) {

@@ -41,6 +41,25 @@ const UserSchema = new mongoose.Schema({
     createdAt: {
         type: Date,
         default: Date.now
+    },
+    // User preferences/settings
+    notifications: {
+        habitReminders: {
+            type: Boolean,
+            default: true
+        },
+        achievementAlerts: {
+            type: Boolean,
+            default: true
+        },
+        weeklySummary: {
+            type: Boolean,
+            default: true
+        }
+    },
+    pushSubscriptions: {
+        type: [mongoose.Schema.Types.Mixed],
+        default: []
     }
 });
 

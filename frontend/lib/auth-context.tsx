@@ -8,6 +8,11 @@ interface User {
   name?: string;
   username?: string;
   email: string;
+  notifications?: {
+    habitReminders?: boolean;
+    achievementAlerts?: boolean;
+    weeklySummary?: boolean;
+  };
   // legacy "points" kept for compatibility with older UI code
   points?: number;
   // New XP/level fields

@@ -35,6 +35,7 @@ app.use('/api/v1/tasks', require('./routes/tasks'));
 app.use('/api/v1/stocks', require('./routes/stocks'));
 app.use('/api/v1/rewards', require('./routes/rewards'));
 app.use('/api/v1/auth', require('./routes/auth'));
+app.use('/api/v1/push', require('./routes/push'));
 
 // Mount nested routes
 app.use('/api/v1/users/:userId/tasks', require('./routes/tasks'));

@@ -66,13 +66,21 @@ exports.updateUser = async (req, res, next) => {
             });
         }
 
-        // Only allow updating certain fields
-        const allowedFields = ['username', 'email'];
-        const updateData = {};
+    // Only allow updating certain fields
+    const allowedFields = ['username', 'email', 'notifications'];
+    const updateData = {};
         
         allowedFields.forEach(field => {
             if (req.body[field] !== undefined) {
-                updateData[field] = req.body[field];
+                if (field === 'notifications' && typeof req.body.notifications === 'object') {
+                    // Merge notifications instead of replacing whole object
+                    updateData['notifications'] = {
+                        ...(req.user.notifications?.toObject ? req.user.notifications.toObject() : req.user.notifications || {}),
+                        ...req.body.notifications
+                    };
+                } else {
+                    updateData[field] = req.body[field];
+                }
             }
         });
 
@@ -97,7 +105,12 @@ exports.updateUser = async (req, res, next) => {
                 points: user.points || 0,
                 totalTasksCompleted: user.totalTasksCompleted || 0,
                 totalRewardsRedeemed: user.totalRewardsRedeemed || 0,
-                createdAt: user.createdAt
+                createdAt: user.createdAt,
+                notifications: user.notifications || {
+                    habitReminders: true,
+                    achievementAlerts: true,
+                    weeklySummary: true
+                }
             }
         });
     } catch (err) {
