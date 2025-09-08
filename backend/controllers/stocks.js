@@ -110,7 +110,7 @@ exports.deleteStock = async (req, res, next) => {
             return res.status(404).json({ success: false });
         }
 
-        await stock.remove();
+        await stock.deleteOne();
 
         res.status(200).json({
             success: true,

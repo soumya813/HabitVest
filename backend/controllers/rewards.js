@@ -148,7 +148,7 @@ exports.deleteReward = async (req, res, next) => {
             });
         }
 
-        await reward.remove();
+        await reward.deleteOne();
 
         res.status(200).json({
             success: true,

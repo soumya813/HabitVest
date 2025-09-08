@@ -149,16 +149,26 @@ exports.updateHabit = async (req, res, next) => {
 // @access  Private
 exports.deleteHabit = async (req, res, next) => {
     try {
-        const habit = await Habit.findOne({ _id: req.params.id, userId: req.user.id });
+        console.log('Delete Habit Request:', {
+            params: req.params,
+            user: req.user ? req.user._id : null
+        });
+        if (!req.user || !req.user._id) {
+            console.error('No authenticated user found');
+            return res.status(401).json({ success: false, error: 'User not authenticated' });
+        }
+        const habit = await Habit.findOne({ _id: req.params.id, userId: req.user._id });
 
         if (!habit) {
+            console.error('Habit not found for user', req.user._id, 'with id', req.params.id);
             return res.status(404).json({ success: false, error: 'Habit not found' });
         }
 
-        await habit.remove();
-
+        await habit.deleteOne();
+        console.log('Habit deleted:', req.params.id);
         res.status(200).json({ success: true, data: {} });
     } catch (err) {
+        console.error('Error deleting habit:', err);
         res.status(400).json({ success: false, error: err.message });
     }
 };

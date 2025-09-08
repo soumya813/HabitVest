@@ -80,6 +80,13 @@ export function HabitList({ habits: initialHabits = [], isLoading: initialLoadin
     fetchCategories()
   }, [])
 
+  // Update internal habits state when prop changes
+  useEffect(() => {
+    if (initialHabits.length > 0) {
+      setHabits(initialHabits)
+    }
+  }, [initialHabits])
+
   const fetchHabits = async (showSuccess?: string) => {
     try {
       const response = await fetch('http://localhost:5001/api/v1/habits', {
@@ -162,15 +169,18 @@ export function HabitList({ habits: initialHabits = [], isLoading: initialLoadin
   const deleteHabit = async (habitId: string) => {
     if (!confirm('Are you sure you want to delete this habit?')) return
     try {
-      const response = await fetch(`/api/v1/habits/${habitId}`, {
+      const response = await fetch(`http://localhost:5001/api/v1/habits/${habitId}`, {
         method: 'DELETE',
         credentials: 'include',
-      })
+        headers: {
+          'Content-Type': 'application/json'
+        }
+      });
       if (response.ok) {
-        fetchHabits('Habit deleted!')
+        fetchHabits('Habit deleted!');
       }
     } catch (error) {
-      console.error('Error deleting habit:', error)
+      console.error('Error deleting habit:', error);
     }
   }
 
@@ -263,98 +273,103 @@ export function HabitList({ habits: initialHabits = [], isLoading: initialLoadin
           </CardContent>
         </Card>
       ) : (
-  <div className="grid gap-4">
+        <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
           {filteredHabits.map((habit) => (
             <Card 
               key={habit._id} 
-              className={`transition-all duration-200 hover:shadow-md ${
+              className={`transition-all duration-200 hover:shadow-md overflow-hidden ${
                 habit.completedToday ? 'bg-green-50 border-green-200' : ''
               }`} style={{ fontSize: '0.92rem', minHeight: '2.5rem' }}
             >
-              <CardContent className="p-2">
-                <div className="flex items-start justify-between">
-                  <div className="flex items-start gap-4 flex-1">
-                    {/* Completion Button */}
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => {
-                        if (!habit.completedToday) toggleHabitCompletion(habit._id, true);
-                      }}
-                      className={`p-1 h-8 w-8 ${habit.completedToday ? 'text-green-600' : 'text-gray-400'}`}
-                      disabled={habit.completedToday}
-                    >
-                      {habit.completedToday ? (
-                        <CheckCircle2 className="w-6 h-6" />
-                      ) : (
-                        <Circle className="w-6 h-6" />
-                      )}
-                    </Button>
+              <CardContent className="p-2 overflow-hidden">
+                <div className="flex items-start gap-4">
+                  {/* Completion Button */}
+                  <Button
+                    variant="ghost"
+                    size="sm"
+                    onClick={() => {
+                      if (!habit.completedToday) toggleHabitCompletion(habit._id, true);
+                    }}
+                    className={`p-1 h-8 w-8 flex-shrink-0 ${habit.completedToday ? 'text-green-600' : 'text-gray-400'}`}
+                    disabled={habit.completedToday}
+                  >
+                    {habit.completedToday ? (
+                      <CheckCircle2 className="w-6 h-6" />
+                    ) : (
+                      <Circle className="w-6 h-6" />
+                    )}
+                  </Button>
 
-                    {/* Habit Info */}
-                    <div className="flex-1 min-w-0">
-                      <div className="flex items-center gap-1 mb-1 min-h-[1.25rem]">
-                        <h3 className={`font-medium text-sm truncate max-w-[8rem] ${habit.completedToday ? 'line-through text-muted-foreground' : ''}`}
-                            style={{lineHeight: '1rem'}}>
-                          {habit.name}
-                        </h3>
-                        <Badge 
-                          variant="secondary" 
-                          style={{ backgroundColor: `${getCategoryColor(habit.category)}20`, color: getCategoryColor(habit.category) }}
-                          className="text-[10px] px-1 py-0.5 rounded font-semibold"
-                        >
-                          {(() => {
-                            if (typeof habit.category === 'object' && habit.category?.name) return habit.category.name;
-                            if (typeof habit.category === 'string') {
-                              const found = categories.find(c => c._id === habit.category);
-                              return found ? found.name : '';
-                            }
-                            return '';
-                          })()}
-                        </Badge>
-                      </div>
-                      
+                  {/* Habit Info */}
+                  <div className="flex-1 min-w-0 overflow-hidden">
+                    <div className="flex items-start gap-1 mb-1 min-h-[1.25rem]">
+                      <h3 className={`font-medium text-sm truncate flex-1 ${habit.completedToday ? 'line-through text-muted-foreground' : ''}`}
+                          style={{lineHeight: '1rem'}}
+                          title={habit.name}>
+                        {habit.name}
+                      </h3>
+                      <Badge 
+                        variant="secondary" 
+                        style={{ backgroundColor: `${getCategoryColor(habit.category)}20`, color: getCategoryColor(habit.category) }}
+                        className="text-[10px] px-1 py-0.5 rounded font-semibold flex-shrink-0"
+                        title={(() => {
+                          if (typeof habit.category === 'object' && habit.category?.name) return habit.category.name;
+                          if (typeof habit.category === 'string') {
+                            const found = categories.find(c => c._id === habit.category);
+                            return found ? found.name : '';
+                          }
+                          return '';
+                        })()}
+                      >
+                        {(() => {
+                          if (typeof habit.category === 'object' && habit.category?.name) return habit.category.name;
+                          if (typeof habit.category === 'string') {
+                            const found = categories.find(c => c._id === habit.category);
+                            return found ? found.name : '';
+                          }
+                          return '';
+                        })()}
+                      </Badge>
+                    </div>
+                    
                       {habit.description && (
-                        <p className="text-sm text-muted-foreground mb-2">{habit.description}</p>
-                      )}
-                      
-                      <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap">
-                        <span className="flex items-center gap-1">
-                          <Calendar className="w-3 h-3" />
-                          {getFrequencyText(habit)}
+                        <p className="text-sm text-muted-foreground mb-2 truncate" title={habit.description}>{habit.description}</p>
+                      )}                    <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap min-w-0">
+                      <span className="flex items-center gap-1 flex-shrink-0 truncate max-w-[120px]">
+                        <Calendar className="w-3 h-3 flex-shrink-0" />
+                        <span className="truncate" title={getFrequencyText(habit)}>{getFrequencyText(habit)}</span>
+                      </span>
+                      <span className="flex items-center gap-1 flex-shrink-0">
+                        <Target className="w-3 h-3 flex-shrink-0" />
+                        <span className="font-semibold text-gray-700 dark:text-gray-200">{habit.points} XP</span>
+                      </span>
+                      {habit.streak > 0 && (
+                        <span className="flex items-center gap-1 flex-shrink-0">
+                          <Flame className="w-3 h-3 text-orange-500 flex-shrink-0" />
+                          <span>{habit.streak} day streak</span>
                         </span>
-                        <span className="flex items-center gap-1">
-                          <Target className="w-3 h-3" />
-                          <span className="font-semibold text-gray-700 dark:text-gray-200">{habit.points} XP</span>
-                        </span>
-                        {habit.streak > 0 && (
-                          <span className="flex items-center gap-1">
-                            <Flame className="w-3 h-3 text-orange-500" />
-                            {habit.streak} day streak
-                          </span>
-                        )}
-                      </div>
-
-                      {/* Progress for weekly/monthly habits */}
-                      {(habit.frequency.type === 'weekly' || habit.frequency.type === 'x_times_per_week') && typeof habit.frequency.count === 'number' && typeof (habit as any).remainingForPeriod === 'number' && (
-                        <div className="mt-3">
-                          <div className="flex justify-between text-sm mb-1">
-                            <span>Progress this week</span>
-                            <span>{habit.frequency.count - (habit as any).remainingForPeriod}/{habit.frequency.count}</span>
-                          </div>
-                          <Progress 
-                            value={((habit.frequency.count - (habit as any).remainingForPeriod) / habit.frequency.count) * 100} 
-                            className="h-2"
-                          />
-                        </div>
                       )}
                     </div>
+
+                    {/* Progress for weekly/monthly habits */}
+                    {(habit.frequency.type === 'weekly' || habit.frequency.type === 'x_times_per_week') && typeof habit.frequency.count === 'number' && typeof (habit as any).remainingForPeriod === 'number' && (
+                      <div className="mt-3">
+                        <div className="flex justify-between text-sm mb-1">
+                          <span>Progress this week</span>
+                          <span>{habit.frequency.count - (habit as any).remainingForPeriod}/{habit.frequency.count}</span>
+                        </div>
+                        <Progress 
+                          value={((habit.frequency.count - (habit as any).remainingForPeriod) / habit.frequency.count) * 100} 
+                          className="h-2"
+                        />
+                      </div>
+                    )}
                   </div>
 
                   {/* Action Menu */}
                   <DropdownMenu>
                     <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 flex-shrink-0 ml-auto">
                         <MoreHorizontal className="w-4 h-4" />
                       </Button>
                     </DropdownMenuTrigger>

@@ -138,9 +138,6 @@ export default function RewardsPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">Rewards</h1>
-          <p className="text-muted-foreground">
-            Redeem rewards using points. Current Points: {userPoints}
-          </p>
         </div>
         <Button onClick={() => setShowRewardForm(true)}>
           <Plus className="w-4 h-4 mr-2" />

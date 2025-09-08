@@ -139,9 +139,6 @@ export default function TasksPage() {
       <div className="flex justify-between items-center">
         <div>
           <h1 className="text-3xl font-bold">Tasks</h1>
-          <p className="text-muted-foreground">
-            Manage your tasks and earn XP  Current XP: {typeof userXp === 'number' ? userXp : userPoints}
-          </p>
         </div>
         <Button onClick={() => setShowTaskForm(true)}>
           <Plus className="w-4 h-4 mr-2" />
