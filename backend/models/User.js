@@ -60,6 +60,54 @@ const UserSchema = new mongoose.Schema({
     pushSubscriptions: {
         type: [mongoose.Schema.Types.Mixed],
         default: []
+    },
+    // Onboarding data
+    onboardingCompleted: {
+        type: Boolean,
+        default: false
+    },
+    onboardingCompletedAt: {
+        type: Date
+    },
+    goals: {
+        type: [String],
+        default: []
+    },
+    schedule: {
+        wakeUpTime: String,
+        workoutTime: String,
+        studyTime: String,
+        bedTime: String,
+        reminderPreferences: {
+            morning: {
+                type: Boolean,
+                default: true
+            },
+            evening: {
+                type: Boolean,
+                default: true
+            },
+            beforeDeadlines: {
+                type: Boolean,
+                default: true
+            }
+        }
+    },
+    preferences: {
+        difficulty: {
+            type: String,
+            enum: ['beginner', 'intermediate', 'advanced'],
+            default: 'beginner'
+        },
+        focusAreas: {
+            type: [String],
+            default: []
+        },
+        motivationStyle: {
+            type: String,
+            enum: ['competitive', 'collaborative', 'personal'],
+            default: 'personal'
+        }
     }
 });
 

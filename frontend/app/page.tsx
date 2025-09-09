@@ -3,16 +3,16 @@
 import { useState, useEffect } from "react"
 import Link from "next/link"
 import type { ElementType } from "react"
-import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
+// Avatar components removed (unused in this file)
 import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Progress } from "@/components/ui/progress"
 import { Badge } from "@/components/ui/badge"
-import { ThemeToggle } from "@/components/theme-toggle"
-import { UserProfile } from "@/components/user-profile"
+// ThemeToggle and UserProfile removed (not used in this file)
 import { HabitForm } from "@/components/habit-form"
 import { HabitList } from "@/components/habit-list"
-import { mockAPI } from "@/lib/mock-api"
+import { OnboardingGuard } from "@/components/onboarding/onboarding-guard"
+// mockAPI removed (not used)
 import { useAuth } from "@/lib/auth-context"
 import {
   TrendingUp,
@@ -47,7 +47,7 @@ interface Category {
 
 interface HabitData {
   _id: string;
-  name: string;
+  title: string;
   description?: string;
   category: Category | string;
   points: number;
@@ -64,6 +64,14 @@ interface HabitData {
 }
 
 export default function Dashboard() {
+  return (
+    <OnboardingGuard>
+      <DashboardContent />
+    </OnboardingGuard>
+  )
+}
+
+function DashboardContent() {
   // Get authenticated user from context
   const { user, isAuthenticated, isLoading: authLoading, setUserPoints } = useAuth();
   
@@ -232,6 +240,12 @@ export default function Dashboard() {
       const response = await fetch(`http://localhost:5001/api/v1/habits/${habitId}/complete`, {
         method: 'POST',
         credentials: 'include',
+        headers: {
+          'Content-Type': 'application/json'
+        },
+        body: JSON.stringify({
+          completed: true
+        })
       });
 
       const contentType = response.headers.get('content-type');
@@ -246,11 +260,17 @@ export default function Dashboard() {
         await Promise.all([fetchHabits(), fetchUserData()]);
         console.log('Habit completed successfully:', data);
       } else {
-        const text = await response.text();
-        console.error('Error completing habit:', response.status, text);
-        if (!contentType || !contentType.includes('application/json')) {
-          console.error('Server returned non-JSON response - backend may be down or auth issue');
-        }
+          let bodyText = '';
+          try {
+            bodyText = await response.text();
+            const parsed = JSON.parse(bodyText);
+            console.error('Error completing habit:', response.status, parsed);
+          } catch (e) {
+            console.error('Error completing habit:', response.status, bodyText);
+          }
+          if (!contentType || !contentType.includes('application/json')) {
+            console.error('Server returned non-JSON response - backend may be down or auth issue');
+          }
       }
     } catch (error) {
       console.error('Error completing habit:', error);

@@ -183,7 +183,7 @@ export function HabitForm({ categories: propCategories, onHabitCreated, onSubmit
         if (contentType && contentType.includes('application/json')) {
           const error = await response.json();
           console.error('Error creating habit:', error);
-          alert('Failed to create habit. ' + (error?.message || error?.error || JSON.stringify(error)));
+          alert('Failed to create habit. ' + (error?.msg || error?.message || error?.error || JSON.stringify(error)));
         } else {
           const text = await response.text();
           console.error('Error creating habit (non-JSON):', text);

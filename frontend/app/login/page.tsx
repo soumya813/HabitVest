@@ -38,8 +38,14 @@ export default function LoginPage() {
       });
       
       if (!res.ok) {
-        const errorData = await res.json();
-        const errorMessage = errorData.msg || errorData.message || `Server error: ${res.status}`;
+        let errorData: any = {};
+        try {
+          errorData = await res.json();
+        } catch (jsonError) {
+          console.error('Failed to parse login error response:', jsonError);
+          errorData = { msg: `Server responded with status ${res.status}` };
+        }
+        const errorMessage = errorData?.msg || `Server error: ${res.status}`;
         setError(errorMessage);
         console.error('Login failed with status:', res.status, errorData);
         return;

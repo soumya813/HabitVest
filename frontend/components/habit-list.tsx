@@ -1,391 +1,252 @@
 "use client"
 
 import { useState, useEffect } from "react"
-import { useToast } from "@/components/ui/use-toast"
-import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
+import { Button } from "@/components/ui/button"
 import { Badge } from "@/components/ui/badge"
 import { Progress } from "@/components/ui/progress"
-import { 
-  CheckCircle2, 
-  Circle, 
-  Calendar, 
-  Target, 
-  Flame, 
-  MoreHorizontal,
-  Plus,
-  Filter
-} from "lucide-react"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
-
+import { CheckCircle, Trash2, Filter, MoreHorizontal } from "lucide-react"
+import { useToast } from "@/components/ui/use-toast"
 
 interface Category {
   _id: string
   name: string
+  icon: string
   color: string
 }
 
-
 interface Habit {
-  _id: string
-  name: string
-  description?: string
-  category: Category | string
-  points: number
+  _id: string;
+  title: string;
+  description?: string;
+  category: Category | string;
   frequency: {
-    type: 'daily' | 'weekly' | 'specific_days' | 'x_times_per_week'
-    days?: number[]
-    count?: number
-  }
-  completedToday?: boolean
-  streak: number
-  isActive: boolean
-  createdAt: string
-  updatedAt: string
-  // Optionally, backend may add:
-  // remainingForPeriod?: number
+    type: "daily" | "weekly" | "monthly";
+    target: number;
+    days?: number[];
+  };
+  completedCount?: number;
+  isCompleted: boolean;
+  streak?: number;
+  lastCompletedAt?: string;
+  createdAt: string;
+  userId: string;
 }
 
 interface HabitListProps {
   habits: Habit[]
-  isLoading?: boolean
-  onHabitComplete?: (habitId: string) => void
-  showDetails?: boolean
+  isLoading: boolean
+  onHabitComplete: (habitId: string) => void
+  onHabitDelete?: (habitId: string) => void
+  showFilters?: boolean
 }
 
-
-export function HabitList({ habits: initialHabits = [], isLoading: initialLoading = false, onHabitComplete, showDetails }: HabitListProps) {
-  const { toast } = useToast();
-  // Import setUserPoints from useAuth
-  const { setUserPoints } = require("@/lib/auth-context").useAuth();
-  const [habits, setHabits] = useState<Habit[]>([])
+export function HabitList({ 
+  habits, 
+  isLoading, 
+  onHabitComplete, 
+  onHabitDelete,
+  showFilters = true 
+}: HabitListProps) {
   const [categories, setCategories] = useState<Category[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const [selectedCategory, setSelectedCategory] = useState<string>('all')
+  const [selectedCategory, setSelectedCategory] = useState<string>("all")
+  const { toast } = useToast()
 
   useEffect(() => {
-    fetchHabits()
     fetchCategories()
   }, [])
-
-  // Update internal habits state when prop changes
-  useEffect(() => {
-    if (initialHabits.length > 0) {
-      setHabits(initialHabits)
-    }
-  }, [initialHabits])
-
-  const fetchHabits = async (showSuccess?: string) => {
-    try {
-      const response = await fetch('http://localhost:5001/api/v1/habits', {
-        credentials: 'include',
-      })
-      const contentType = response.headers.get('content-type');
-      if (response.ok && contentType && contentType.includes('application/json')) {
-        const data = await response.json()
-        if (data.success) {
-          setHabits(data.data)
-          if (showSuccess) {
-            toast({ title: showSuccess, variant: 'default' })
-          }
-        }
-      } else {
-        const text = await response.text();
-        console.error('Error fetching habits:', response.status, text);
-        if (!contentType || !contentType.includes('application/json')) {
-          console.error('Server returned non-JSON response - backend may be down or auth issue');
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching habits:', error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
 
   const fetchCategories = async () => {
     try {
       const response = await fetch('http://localhost:5001/api/v1/categories', {
         credentials: 'include',
       })
-      const contentType = response.headers.get('content-type');
-      if (response.ok && contentType && contentType.includes('application/json')) {
-        const data = await response.json()
-        if (data.success) {
-          setCategories(data.data)
-        }
-      } else {
-        const text = await response.text();
-        console.error('Error fetching categories:', response.status, text);
-        if (!contentType || !contentType.includes('application/json')) {
-          console.error('Server returned non-JSON response - backend may be down or auth issue');
-        }
-      }
-    } catch (error) {
-      console.error('Error fetching categories:', error)
-    }
-  }
-
-  const toggleHabitCompletion = async (habitId: string, completed: boolean) => {
-    try {
-      const response = await fetch(`http://localhost:5001/api/v1/habits/${habitId}/complete`, {
-        method: 'POST',
-        credentials: 'include',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({ completed }),
-      })
-      
-      const contentType = response.headers.get('content-type');
-      if (response.ok && contentType && contentType.includes('application/json')) {
-        const data = await response.json();
-        if (typeof data.userPoints === 'number') {
-          setUserPoints(data.userPoints);
-        }
-        fetchHabits(completed ? 'Habit marked as complete!' : 'Habit marked as incomplete!')
-      } else {
-        const text = await response.text();
-        console.error('Error toggling habit completion:', response.status, text);
-        if (!contentType || !contentType.includes('application/json')) {
-          console.error('Server returned non-JSON response - backend may be down or auth issue');
-        }
-      }
-    } catch (error) {
-      console.error('Error toggling habit completion:', error)
-    }
-  }
-
-  const deleteHabit = async (habitId: string) => {
-    if (!confirm('Are you sure you want to delete this habit?')) return
-    try {
-      const response = await fetch(`http://localhost:5001/api/v1/habits/${habitId}`, {
-        method: 'DELETE',
-        credentials: 'include',
-        headers: {
-          'Content-Type': 'application/json'
-        }
-      });
       if (response.ok) {
-        fetchHabits('Habit deleted!');
+        const data = await response.json()
+        setCategories(data.data || [])
       }
     } catch (error) {
-      console.error('Error deleting habit:', error);
+      console.error('Failed to fetch categories:', error)
+    }
+  }
+
+  const handleToggleComplete = async (habitId: string) => {
+    try {
+      onHabitComplete(habitId)
+      toast({
+        title: "Habit updated!",
+        description: "Great job on maintaining your habit!",
+      })
+    } catch (error) {
+      console.error('Failed to toggle habit:', error)
+      toast({
+        title: "Error",
+        description: "Failed to update habit. Please try again.",
+        variant: "destructive",
+      })
+    }
+  }
+
+  const handleDelete = async (habitId: string) => {
+    if (!onHabitDelete) return
+    
+    try {
+      onHabitDelete(habitId)
+      toast({
+        title: "Habit deleted",
+        description: "The habit has been removed from your list.",
+      })
+    } catch (error) {
+      console.error('Failed to delete habit:', error)
+      toast({
+        title: "Error",
+        description: "Failed to delete habit. Please try again.",
+        variant: "destructive",
+      })
     }
   }
 
   const filteredHabits = habits.filter(habit => {
-    const catName = typeof habit.category === 'string' ? habit.category : habit.category?.name;
-    return selectedCategory === 'all' || catName === selectedCategory;
-  })
+    if (selectedCategory === "all") return true;
+    const categoryId = typeof habit.category === 'string' ? habit.category : (habit.category as Category)?._id;
+    return categoryId === selectedCategory;
+  });
 
-  const getFrequencyText = (habit: Habit) => {
-    switch (habit.frequency.type) {
-      case 'daily':
-        return 'Daily';
-      case 'weekly':
-        return `${habit.frequency.count ?? 0}x per week`;
-      case 'x_times_per_week':
-        return `${habit.frequency.count ?? 0}x per week`;
-      case 'specific_days': {
-        const days = ['Sun', 'Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat'];
-        return (habit.frequency.days ?? []).map(d => days[d]).join(', ');
-      }
-      default:
-        return 'Unknown';
+  const getFrequencyText = (frequency: any) => {
+    if (!frequency || typeof frequency !== 'object') {
+      return "";
     }
-  }
+    const type = frequency.type;
+    const target = frequency.target ?? frequency.count ?? 1;
+    switch (type) {
+      case "daily":
+        return target === 1 ? "Daily" : `${target}x daily`;
+      case "weekly":
+        return target === 1 ? "Weekly" : `${target}x weekly`;
+      case "monthly":
+        return target === 1 ? "Monthly" : `${target}x monthly`;
+      default:
+        return type;
+    }
+  };
 
   const getCategoryColor = (category: string | Category) => {
-    const catName = typeof category === 'string' ? category : category?.name;
-    const found = categories.find(c => c.name === catName);
-    return found?.color || '#3B82F6';
-  }
+    const categoryId = typeof category === 'string' ? category : (category as Category)?._id;
+    const cat = categories.find(c => c._id === categoryId);
+    return cat?.color || "#6366f1";
+  };
 
+  // Render as a plain container so parent can control card/layout
   if (isLoading) {
     return (
-      <div className="flex items-center justify-center p-8">
-        <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-gray-900"></div>
+      <div className="w-full">
+        <div className="text-center py-8">
+          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-primary mx-auto"></div>
+          <p className="text-muted-foreground mt-2">Loading habits...</p>
+        </div>
       </div>
     )
   }
 
   return (
-    <div className="space-y-6">
-      {/* Header with filters */}
-      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
-        <div>
-          <h2 className="text-2xl font-bold">My Habits</h2>
-          <p className="text-muted-foreground">
-            {filteredHabits.length} habit{filteredHabits.length !== 1 ? 's' : ''}
-          </p>
-        </div>
-        
-        <div className="flex items-center gap-3">
-          <Select value={selectedCategory} onValueChange={setSelectedCategory}>
-            <SelectTrigger className="w-40">
-              <Filter className="w-4 h-4 mr-2" />
-              <SelectValue placeholder="Filter" />
-            </SelectTrigger>
-            <SelectContent>
-              <SelectItem value="all">All Categories</SelectItem>
+    <div className="w-full">
+      <div className="flex items-center justify-between mb-3">
+        <h4 className="text-base font-medium">Your Habits</h4>
+        {showFilters && categories.length > 0 && (
+          <div className="flex items-center gap-2">
+            <Filter className="h-4 w-4 text-muted-foreground" />
+            <select
+              value={selectedCategory}
+              onChange={(e) => setSelectedCategory(e.target.value)}
+              className="text-sm border rounded px-2 py-1"
+            >
+              <option value="all">All Categories</option>
               {categories.map((category) => (
-                <SelectItem key={category._id} value={category.name}>
-                  <div className="flex items-center gap-2">
-                    <div 
-                      className="w-3 h-3 rounded-full" 
-                      style={{ backgroundColor: category.color }}
-                    />
-                    {category.name}
-                  </div>
-                </SelectItem>
+                <option key={category._id} value={category._id}>
+                  {category.name}
+                </option>
               ))}
-            </SelectContent>
-          </Select>
-          
-          {/* Add Habit button removed: use parent component to handle creation */}
-        </div>
+            </select>
+          </div>
+        )}
       </div>
 
-      {/* Habits Grid */}
       {filteredHabits.length === 0 ? (
-        <Card className="text-center py-12">
-          <CardContent>
-            <Target className="w-12 h-12 mx-auto text-muted-foreground mb-4" />
-            <h3 className="text-lg font-semibold mb-2">No habits found</h3>
-            <p className="text-muted-foreground mb-4">
-              {selectedCategory === 'all' 
-                ? "Start building better habits today!"
-                : `No habits in the "${selectedCategory}" category.`
-              }
-            </p>
-            {/* Add Habit button removed: use parent component to handle creation */}
-          </CardContent>
-        </Card>
+        <div className="text-center py-8">
+          <p className="text-muted-foreground">
+            {selectedCategory === "all" 
+              ? "No habits yet. Create your first habit to get started!" 
+              : "No habits in this category."}
+          </p>
+        </div>
       ) : (
-        <div className="grid gap-4 grid-cols-1 md:grid-cols-2 lg:grid-cols-1 xl:grid-cols-2">
+        <div className="space-y-4">
           {filteredHabits.map((habit) => (
-            <Card 
-              key={habit._id} 
-              className={`transition-all duration-200 hover:shadow-md overflow-hidden ${
-                habit.completedToday ? 'bg-green-50 border-green-200' : ''
-              }`} style={{ fontSize: '0.92rem', minHeight: '2.5rem' }}
+            <div
+              key={habit._id}
+              className="flex items-center justify-between p-4 border rounded-lg hover:bg-muted/50 transition-colors"
             >
-              <CardContent className="p-2 overflow-hidden">
-                <div className="flex items-start gap-4">
-                  {/* Completion Button */}
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    onClick={() => {
-                      if (!habit.completedToday) toggleHabitCompletion(habit._id, true);
-                    }}
-                    className={`p-1 h-8 w-8 flex-shrink-0 ${habit.completedToday ? 'text-green-600' : 'text-gray-400'}`}
-                    disabled={habit.completedToday}
-                  >
-                    {habit.completedToday ? (
-                      <CheckCircle2 className="w-6 h-6" />
-                    ) : (
-                      <Circle className="w-6 h-6" />
-                    )}
-                  </Button>
-
-                  {/* Habit Info */}
-                  <div className="flex-1 min-w-0 overflow-hidden">
-                    <div className="flex items-start gap-1 mb-1 min-h-[1.25rem]">
-                      <h3 className={`font-medium text-sm truncate flex-1 ${habit.completedToday ? 'line-through text-muted-foreground' : ''}`}
-                          style={{lineHeight: '1rem'}}
-                          title={habit.name}>
-                        {habit.name}
-                      </h3>
-                      <Badge 
-                        variant="secondary" 
-                        style={{ backgroundColor: `${getCategoryColor(habit.category)}20`, color: getCategoryColor(habit.category) }}
-                        className="text-[10px] px-1 py-0.5 rounded font-semibold flex-shrink-0"
-                        title={(() => {
-                          if (typeof habit.category === 'object' && habit.category?.name) return habit.category.name;
-                          if (typeof habit.category === 'string') {
-                            const found = categories.find(c => c._id === habit.category);
-                            return found ? found.name : '';
-                          }
-                          return '';
-                        })()}
-                      >
-                        {(() => {
-                          if (typeof habit.category === 'object' && habit.category?.name) return habit.category.name;
-                          if (typeof habit.category === 'string') {
-                            const found = categories.find(c => c._id === habit.category);
-                            return found ? found.name : '';
-                          }
-                          return '';
-                        })()}
-                      </Badge>
-                    </div>
-                    
-                      {habit.description && (
-                        <p className="text-sm text-muted-foreground mb-2 truncate" title={habit.description}>{habit.description}</p>
-                      )}                    <div className="flex items-center gap-2 text-xs text-muted-foreground flex-wrap min-w-0">
-                      <span className="flex items-center gap-1 flex-shrink-0 truncate max-w-[120px]">
-                        <Calendar className="w-3 h-3 flex-shrink-0" />
-                        <span className="truncate" title={getFrequencyText(habit)}>{getFrequencyText(habit)}</span>
-                      </span>
-                      <span className="flex items-center gap-1 flex-shrink-0">
-                        <Target className="w-3 h-3 flex-shrink-0" />
-                        <span className="font-semibold text-gray-700 dark:text-gray-200">{habit.points} XP</span>
-                      </span>
-                      {habit.streak > 0 && (
-                        <span className="flex items-center gap-1 flex-shrink-0">
-                          <Flame className="w-3 h-3 text-orange-500 flex-shrink-0" />
-                          <span>{habit.streak} day streak</span>
-                        </span>
-                      )}
-                    </div>
-
-                    {/* Progress for weekly/monthly habits */}
-                    {(habit.frequency.type === 'weekly' || habit.frequency.type === 'x_times_per_week') && typeof habit.frequency.count === 'number' && typeof (habit as any).remainingForPeriod === 'number' && (
-                      <div className="mt-3">
-                        <div className="flex justify-between text-sm mb-1">
-                          <span>Progress this week</span>
-                          <span>{habit.frequency.count - (habit as any).remainingForPeriod}/{habit.frequency.count}</span>
-                        </div>
-                        <Progress 
-                          value={((habit.frequency.count - (habit as any).remainingForPeriod) / habit.frequency.count) * 100} 
-                          className="h-2"
-                        />
-                      </div>
-                    )}
+              <div className="flex items-start gap-3 flex-1">
+                <Button
+                  variant={habit.isCompleted ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => handleToggleComplete(habit._id)}
+                  className="mt-1"
+                >
+                  <CheckCircle className="h-4 w-4" />
+                </Button>
+                
+                <div className="flex-1 min-w-0">
+                  <div className="flex items-center gap-2 mb-1">
+                    <h3 className={`font-medium ${habit.isCompleted ? 'line-through text-muted-foreground' : ''}`}>
+                      { (habit as any).name || habit.title }
+                    </h3>
+                    <Badge 
+                      variant="secondary" 
+                      className="text-xs"
+                      style={{ backgroundColor: `${getCategoryColor(habit.category)}20`, color: getCategoryColor(habit.category) }}
+                    >
+                      {getFrequencyText(habit.frequency)}
+                    </Badge>
                   </div>
-
-                  {/* Action Menu */}
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="sm" className="h-8 w-8 p-0 flex-shrink-0 ml-auto">
-                        <MoreHorizontal className="w-4 h-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      {/* Edit button removed: use parent component to handle editing */}
-                      <DropdownMenuItem 
-                        onClick={() => deleteHabit(habit._id)}
-                        className="text-red-600"
-                      >
-                        Delete
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                  
+                  {habit.description && (
+                    <p className="text-sm text-muted-foreground mb-2">
+                      {habit.description}
+                    </p>
+                  )}
+                  
+                  {habit.streak !== undefined && habit.streak > 0 && (
+                    <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                      <span>🔥 {habit.streak} day streak</span>
+                    </div>
+                  )}
+                  
+                  {habit.completedCount !== undefined && ((habit.frequency?.target ?? (habit.frequency as any)?.count ?? 1)) > 1 && (
+                    <div className="mt-2">
+                      <div className="flex justify-between items-center text-xs text-muted-foreground mb-1">
+                        <span>{habit.completedCount}/{habit.frequency.target ?? (habit.frequency as any).count}</span>
+                      </div>
+                      <Progress 
+                        value={(habit.completedCount / (habit.frequency.target ?? (habit.frequency as any).count)) * 100}
+                        className="h-2" 
+                      />
+                    </div>
+                  )}
                 </div>
-              </CardContent>
-            </Card>
+              </div>
+              
+              {onHabitDelete && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => handleDelete(habit._id)}
+                  className="text-destructive hover:text-destructive/80 ml-2"
+                >
+                  <Trash2 className="h-4 w-4" />
+                </Button>
+              )}
+            </div>
           ))}
         </div>
       )}

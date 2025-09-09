@@ -4,11 +4,15 @@ const {
     getUser,
     createUser,
     updateUser,
-    deleteUser
+    deleteUser,
+    completeOnboarding
 } = require('../controllers/users');
 const { protect } = require('../middleware/auth');
 
 const router = express.Router();
+
+// Onboarding route
+router.post('/onboarding', protect, completeOnboarding);
 
 router
     .route('/')

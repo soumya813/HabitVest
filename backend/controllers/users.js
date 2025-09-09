@@ -122,6 +122,102 @@ exports.updateUser = async (req, res, next) => {
     }
 };
 
+// @desc    Complete user onboarding
+// @route   POST /api/v1/users/onboarding
+// @access  Private
+exports.completeOnboarding = async (req, res, next) => {
+    try {
+        const userId = req.user.id;
+        const { goals, schedule, initialHabits, preferences } = req.body;
+        // Create initial habits first (validate categories and ensure correct shape)
+        let createdHabitsCount = 0;
+        if (initialHabits && initialHabits.length > 0) {
+            const Habit = require('../models/Habit');
+            const Category = require('../models/Category');
+
+            const habitsToCreate = [];
+            for (const h of initialHabits) {
+                // Validate category id exists (if provided)
+                if (h.category) {
+                    const cat = await Category.findById(h.category);
+                    if (!cat) {
+                        return res.status(404).json({ success: false, msg: `Category not found: ${h.category}` });
+                    }
+                }
+
+                // Ensure frequency has a numeric target (support count alias)
+                const freq = h.frequency || { type: 'daily' };
+                const normalizedFrequency = {
+                    type: freq.type || 'daily',
+                    target: (typeof freq.target === 'number' ? freq.target : (typeof freq.count === 'number' ? freq.count : 1)),
+                    days: Array.isArray(freq.days) ? freq.days : undefined
+                };
+
+                habitsToCreate.push({
+                    name: h.name || h.title || 'New Habit',
+                    description: h.description || '',
+                    category: h.category || null,
+                    points: typeof h.points === 'number' ? h.points : 10,
+                    frequency: normalizedFrequency,
+                    userId: userId,
+                    createdAt: new Date(),
+                    isActive: h.isActive !== undefined ? h.isActive : true,
+                    streak: { current: 0, longest: 0 }
+                });
+            }
+
+            if (habitsToCreate.length > 0) {
+                const inserted = await Habit.insertMany(habitsToCreate);
+                createdHabitsCount = Array.isArray(inserted) ? inserted.length : 0;
+                console.log('Onboarding - created habits:', createdHabitsCount, (Array.isArray(inserted) ? inserted.map(i => i._id) : inserted));
+            }
+        }
+
+        // Now update user with onboarding data and mark as completed
+        const user = await User.findByIdAndUpdate(
+            userId,
+            {
+                goals,
+                schedule,
+                preferences,
+                onboardingCompleted: true,
+                onboardingCompletedAt: new Date()
+            },
+            { new: true, runValidators: true }
+        );
+
+        if (!user) {
+            return res.status(404).json({ 
+                success: false, 
+                msg: 'User not found' 
+            });
+        }
+
+        res.status(200).json({
+            success: true,
+            msg: 'Onboarding completed successfully',
+            data: {
+                user: {
+                    _id: user._id,
+                    username: user.username,
+                    email: user.email,
+                    onboardingCompleted: user.onboardingCompleted,
+                    goals: user.goals,
+                    preferences: user.preferences
+                },
+                habitsCreated: createdHabitsCount
+            }
+        });
+    } catch (err) {
+        console.error('Onboarding completion error:', err);
+        res.status(400).json({ 
+            success: false, 
+            msg: 'Failed to complete onboarding',
+            error: err.message 
+        });
+    }
+};
+
 // @desc    Delete user
 // @route   DELETE /api/v1/users/:id
 // @access  Private

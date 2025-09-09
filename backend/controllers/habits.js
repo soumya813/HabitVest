@@ -192,86 +192,81 @@ exports.completeHabit = async (req, res, next) => {
 
         const today = new Date();
         today.setHours(0, 0, 0, 0);
+        // Ensure completions is an array (older docs may have it missing)
+        if (!Array.isArray(habit.completions)) {
+            habit.completions = [];
+        }
+
         // Check if already completed today
         const existingCompletion = habit.completions.find(completion => {
+            if (!completion || !completion.date) return false;
             const completionDate = new Date(completion.date);
             completionDate.setHours(0, 0, 0, 0);
             return completionDate.getTime() === today.getTime();
         });
 
-        const { completed = true, notes = '' } = req.body;
+        const requestBody = req.body || {};
+        const { completed = true, notes = '' } = requestBody;
         let pointsDelta = 0;
-        let userPoints = 0;
         const User = require('../models/User');
 
         if (existingCompletion) {
-            // If already completed today, do not add points again
+            // If already completed today, update existing record
             if (!existingCompletion.completed && completed) {
                 // Mark as completed and add points
                 existingCompletion.completed = true;
                 existingCompletion.notes = notes;
                 pointsDelta = habit.points;
             } else if (existingCompletion.completed && !completed) {
-                // Unmarking is not allowed by frontend, but if allowed, subtract points
+                // Unmarking completion, subtract points
                 existingCompletion.completed = false;
                 existingCompletion.notes = notes;
                 pointsDelta = -habit.points;
-            } else {
-                // No change
-                existingCompletion.notes = notes;
             }
-        } else {
-            // Add new completion
-            habit.completions.push({
-                date: today,
-                completed,
-                notes
-            });
-            if (completed) {
-                pointsDelta = habit.points;
-            }
+        } else if (completed) {
+            // If not completed today and request is to complete, create new record and add points
+            habit.completions = habit.completions || [];
+            habit.completions.push({ date: today, completed: true, notes });
+            pointsDelta = habit.points;
         }
 
-        // Update streak
-        if (completed) {
-            habit.streak.current += 1;
-            if (habit.streak.current > habit.streak.longest) {
-                habit.streak.longest = habit.streak.current;
+        // Update streak (guard if method throws)
+        try {
+            if (typeof habit.updateStreak === 'function') {
+                await habit.updateStreak();
             }
-        } else {
-            habit.streak.current = 0;
+        } catch (stErr) {
+            console.error('Error updating streak for habit', habit._id, stErr);
         }
 
         await habit.save();
 
-        // Update user points if needed
+        // Update user points if they changed
         if (pointsDelta !== 0) {
-            const userDoc = await User.findById(req.user.id);
-            if (userDoc) {
-                userDoc.points = (userDoc.points || 0) + pointsDelta;
-                if (pointsDelta > 0) {
-                    userDoc.totalTasksCompleted = (userDoc.totalTasksCompleted || 0) + 1;
-                }
-                await userDoc.save();
-                userPoints = userDoc.points;
-            } else {
-                userPoints = 0;
-            }
-        } else {
-            const userDoc = await User.findById(req.user.id);
-            userPoints = userDoc.points;
+            const user = await User.findById(req.user.id);
+            user.points += pointsDelta;
+            await user.save();
+            return res.status(200).json({
+                success: true,
+                data: habit,
+                userPoints: user.points
+            });
         }
-
-        res.status(200).json({
-            success: true,
-            data: habit,
-            userPoints
+        
+        res.status(200).json({ 
+            success: true, 
+            data: habit 
         });
     } catch (err) {
         console.error('Complete habit error:', err);
+        console.error('Request body:', req.body);
+        console.error('Habit id:', req.params.id);
+        console.error('User id:', req.user ? req.user.id : 'undefined');
+        
         res.status(400).json({ 
             success: false, 
-            msg: 'Failed to update habit completion' 
+            msg: 'Failed to update habit completion',
+            error: err && err.message ? err.message : String(err)
         });
     }
 };
@@ -293,16 +288,16 @@ exports.getHabitStats = async (req, res, next) => {
             });
         }
 
-        const completions = habit.completions.filter(c => c.completed);
-        const totalDays = Math.ceil((new Date() - habit.createdAt) / (1000 * 60 * 60 * 24));
+        const completions = Array.isArray(habit.completions) ? habit.completions.filter(c => c && c.completed) : [];
+        const totalDays = Math.ceil((new Date() - (habit.createdAt || new Date())) / (1000 * 60 * 60 * 24));
         const completionRate = totalDays > 0 ? (completions.length / totalDays) * 100 : 0;
 
         const stats = {
             totalCompletions: completions.length,
-            currentStreak: habit.streak.current,
-            longestStreak: habit.streak.longest,
+            currentStreak: habit.streak ? (habit.streak.current || 0) : 0,
+            longestStreak: habit.streak ? (habit.streak.longest || 0) : 0,
             completionRate: Math.round(completionRate * 100) / 100,
-            totalPoints: completions.length * habit.points,
+            totalPoints: completions.length * (habit.points || 0),
             daysActive: totalDays
         };
 

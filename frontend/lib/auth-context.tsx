@@ -23,6 +23,26 @@ interface User {
   totalTasksCompleted?: number;
   totalRewardsRedeemed?: number;
   createdAt?: string;
+  // Onboarding fields
+  onboardingCompleted?: boolean;
+  onboardingCompletedAt?: string;
+  goals?: string[];
+  schedule?: {
+    wakeUpTime?: string;
+    workoutTime?: string;
+    studyTime?: string;
+    bedTime?: string;
+    reminderPreferences?: {
+      morning?: boolean;
+      evening?: boolean;
+      beforeDeadlines?: boolean;
+    };
+  };
+  preferences?: {
+    difficulty?: 'beginner' | 'intermediate' | 'advanced';
+    focusAreas?: string[];
+    motivationStyle?: 'competitive' | 'collaborative' | 'personal';
+  };
   // Add other user properties as needed
 }
 
