@@ -19,9 +19,19 @@ export function OnboardingGuard({ children }: OnboardingGuardProps) {
       return
     }
 
-    // If user is authenticated but hasn't completed onboarding
+    // Only redirect to onboarding for users who haven't completed it
+    // New users will be redirected, existing users can optionally complete onboarding
     if (user && !user.onboardingCompleted) {
-      router.push('/onboarding')
+      // Check if user was created recently (likely a new user)
+      const userCreatedAt = new Date(user.createdAt || '2023-01-01');
+      const recentUserThreshold = new Date();
+      recentUserThreshold.setDate(recentUserThreshold.getDate() - 7); // Users created in last 7 days
+      
+      // Only auto-redirect very recent users to onboarding
+      if (userCreatedAt > recentUserThreshold) {
+        router.push('/onboarding')
+      }
+      // For older users, they can access the app normally and complete onboarding if they choose
     }
   }, [user, isLoading, pathname, router])
 
@@ -37,9 +47,16 @@ export function OnboardingGuard({ children }: OnboardingGuardProps) {
     )
   }
 
-  // If user needs onboarding and not on onboarding page, don't render children
+  // Only block content for very recent users who haven't completed onboarding
   if (user && !user.onboardingCompleted && pathname !== '/onboarding') {
-    return null
+    const userCreatedAt = new Date(user.createdAt || '2023-01-01');
+    const recentUserThreshold = new Date();
+    recentUserThreshold.setDate(recentUserThreshold.getDate() - 7); // Users created in last 7 days
+    
+    // Only block rendering for very recent users
+    if (userCreatedAt > recentUserThreshold) {
+      return null
+    }
   }
 
   return <>{children}</>

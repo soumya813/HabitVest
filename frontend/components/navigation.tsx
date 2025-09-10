@@ -55,6 +55,14 @@ export function Navigation() {
             <div className="h-8 w-24 bg-white/20 rounded-md animate-pulse" />
           ) : isAuthenticated && user ? (
             <>
+              {/* Show onboarding suggestion for existing users who haven't completed it */}
+              {!user.onboardingCompleted && (
+                <Link href="/onboarding">
+                  <Button variant="outline" size="sm" className="bg-yellow-500/20 text-yellow-200 border-yellow-400/50 hover:bg-yellow-500/30 hidden lg:flex">
+                    Complete Setup
+                  </Button>
+                </Link>
+              )}
               <Badge variant="secondary" className="hidden sm:flex items-center space-x-1 bg-white/20 text-white border-white/20">
                 <Star className="h-3 w-3 text-yellow-400" />
                 <span className="font-medium">

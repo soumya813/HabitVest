@@ -50,17 +50,22 @@ interface HabitData {
   title: string;
   description?: string;
   category: Category | string;
-  points: number;
+  points?: number;
   frequency: {
-    type: 'daily' | 'weekly' | 'specific_days' | 'x_times_per_week';
+    type: "daily" | "weekly" | "monthly";
+    target: number;
     days?: number[];
-    count?: number;
   };
+  completedCount?: number;
   completedToday?: boolean;
-  streak: number;
-  isActive: boolean;
+  streak?: number;
+  isActive?: boolean;
   createdAt: string;
-  updatedAt: string;
+  updatedAt?: string;
+  lastCompletedAt?: string;
+  // Properties expected by HabitList component
+  isCompleted: boolean;
+  userId: string;
 }
 
 export default function Dashboard() {
@@ -158,7 +163,30 @@ function DashboardContent() {
       if (response.ok && contentType && contentType.includes('application/json')) {
         const data = await response.json();
         console.log('Habits data received:', data);
-        setHabits(data.data || []);
+        // Map the API response to match the expected interface
+        const mappedHabits = (data.data || []).map((habit: any) => ({
+          _id: habit._id,
+          title: habit.title,
+          description: habit.description,
+          category: habit.category,
+          frequency: {
+            type: habit.frequency?.type === 'specific_days' ? 'daily' : 
+                  habit.frequency?.type === 'x_times_per_week' ? 'weekly' : 
+                  habit.frequency?.type || 'daily',
+            target: habit.frequency?.count || habit.points || 1,
+            days: habit.frequency?.days
+          },
+          completedCount: habit.completedCount || 0,
+          isCompleted: habit.completedToday || false,
+          streak: habit.streak || 0,
+          lastCompletedAt: habit.lastCompletedAt,
+          createdAt: habit.createdAt,
+          userId: user?._id || '',
+          points: habit.points || 0,
+          isActive: habit.isActive !== false,
+          updatedAt: habit.updatedAt
+        }));
+        setHabits(mappedHabits);
       } else {
         const text = await response.text();
         console.error('Error fetching habits: ', response.status, text);
@@ -379,7 +407,7 @@ function DashboardContent() {
       });
 
       const completedHabits = categoryHabits.filter(h => h.completedToday);
-      const categoryPoints = completedHabits.reduce((sum, habit) => sum + habit.points, 0);
+      const categoryPoints = completedHabits.reduce((sum, habit) => sum + (habit.points || 0), 0);
       const completionRate = categoryHabits.length > 0 ? completedHabits.length / categoryHabits.length : 0;
       
       // Calculate dynamic value
@@ -388,7 +416,7 @@ function DashboardContent() {
       const dynamicValue = Math.round(baseValue + pointsBonus + completionBonus);
       
       // Calculate growth percentage
-      const avgStreak = categoryHabits.reduce((sum, h) => sum + h.streak, 0) / Math.max(categoryHabits.length, 1);
+      const avgStreak = categoryHabits.reduce((sum, h) => sum + (h.streak || 0), 0) / Math.max(categoryHabits.length, 1);
       const growthPercentage = Math.max(-10, Math.min(15, 
         (completedHabits.length * 1) + (avgStreak * 0.1) + (completionRate * 5) - 2
       ));
@@ -425,7 +453,7 @@ function DashboardContent() {
 
     // Calculate streak from habits
     const avgStreak = habits.length > 0 
-      ? Math.round(habits.reduce((sum, h) => sum + h.streak, 0) / habits.length)
+      ? Math.round(habits.reduce((sum, h) => sum + (h.streak || 0), 0) / habits.length)
       : 0;
 
   // Calculate level from points (every 100 points = 1 level)

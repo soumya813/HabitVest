@@ -184,7 +184,10 @@ const sendTokenResponse = (user, statusCode, res) => {
                 email: user.email,
                 points: user.points || 0,
                 totalTasksCompleted: user.totalTasksCompleted || 0,
-                totalRewardsRedeemed: user.totalRewardsRedeemed || 0
+                totalRewardsRedeemed: user.totalRewardsRedeemed || 0,
+                onboardingCompleted: user.onboardingCompleted || false,
+                onboardingCompletedAt: user.onboardingCompletedAt,
+                createdAt: user.createdAt
             }
         });
 };

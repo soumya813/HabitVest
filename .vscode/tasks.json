@@ -8,6 +8,13 @@
 			"group": "build",
 			"isBackground": true,
 			"problemMatcher": []
+		},
+		{
+			"label": "Start Frontend Dev Server - Fixed",
+			"type": "shell",
+			"command": "cd frontend; pnpm dev",
+			"isBackground": true,
+			"group": "build"
 		}
 	]
 }
